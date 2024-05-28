@@ -55,7 +55,7 @@ int main() {
 		return -1;
 	}
 
-	w->SetConsolePosition(2000, 200);
+	w->SetConsolePosition(200, 200);
 
 	/*
 	API Functionality Tutorials
@@ -80,14 +80,14 @@ int main() {
 	//auto* tutorial = new PostProcessingExample(*w);
 	//auto* tutorial = new ShadowMappingExample(*w);
 	//auto* tutorial = new LightingExample(*w);
-	auto* tutorial = new DeferredExample(*w);
+	//auto* tutorial = new DeferredExample(*w);
 	//auto* tutorial = new GLTFExample(*w);
 	//auto* tutorial = new SkinningExample(*w);
 	//auto* tutorial = new CubeMapExample(*w);
 
 	//auto* tutorial = new TessellationExample(*w);
 	//auto* tutorial = new GeometryShaderExample(*w);
-	//auto* tutorial = new ComputeExample(*w);
+	auto* tutorial = new ComputeExample(*w);
 	//auto* tutorial = new AsyncComputeExample(*w);
 	//auto* tutorial = new ComputeSkinningExample(*w);
 

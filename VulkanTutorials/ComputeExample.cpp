@@ -24,35 +24,19 @@ ComputeExample::ComputeExample(Window& window) : VulkanTutorial(window)	{
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
-	particlePositions = BufferBuilder(device, renderer->GetMemoryAllocator())
-		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
-		.Build(sizeof(Vector4) * PARTICLE_COUNT, "Particles!");
+	imageDescrLayout = DescriptorSetLayoutBuilder(device)
+		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eCompute)
+		.Build("Compute Data");
 
-	dataLayout = DescriptorSetLayoutBuilder(device)
-		.WithStorageBuffers(0, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eCompute)
-		.Build("Compute Data"); //Get our camera matrices...
-
-	rasterShader = ShaderBuilder(device)
-		.WithVertexBinary("BasicCompute.vert.spv")
-		.WithFragmentBinary("BasicCompute.frag.spv")
-		.Build("Shader using compute data!");
-
-	basicPipeline = PipelineBuilder(device)
-		.WithTopology(vk::PrimitiveTopology::ePointList)
-		.WithShader(rasterShader)
-		.WithColourAttachment(state.colourFormat)
-		.WithDescriptorSetLayout(0, *dataLayout)
-		.Build("Raster Pipeline");
+	imageDescriptor = CreateDescriptorSet(device, pool, *imageDescrLayout);
+	WriteStorageImageDescriptor(device, *imageDescriptor, 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
 
 	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "BasicCompute.comp.spv"));
 
 	computePipeline = ComputePipelineBuilder(device)
 		.WithShader(computeShader)
-		.WithDescriptorSetLayout(0, *dataLayout)
+		.WithDescriptorSetLayout(0, *imageDescrLayout)
 		.Build("Compute Pipeline");
-	
-	bufferDescriptor = CreateDescriptorSet(device , pool, *dataLayout);
-	WriteBufferDescriptor(device , *bufferDescriptor, 0, vk::DescriptorType::eStorageBuffer, particlePositions);
 }
 
 void ComputeExample::RenderFrame(float dt) {

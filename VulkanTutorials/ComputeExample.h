@@ -18,13 +18,13 @@ namespace NCL::Rendering::Vulkan {
 
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
+		UniqueVulkanTexture computeTexture;
 
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
 
 		VulkanBuffer			particlePositions;
-		vk::UniqueDescriptorSet	bufferDescriptor;
-
-		vk::UniqueDescriptorSetLayout	dataLayout;
+		vk::UniqueDescriptorSet	imageDescriptor;
+		vk::UniqueDescriptorSetLayout	imageDescrLayout;
 	};
 }
