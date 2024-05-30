@@ -6,16 +6,16 @@ Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 
-#version 450
+#version 460
 #extension GL_ARB_separate_shader_objects  : enable
 #extension GL_ARB_shading_language_420pack : enable
 
-layout (set = 0, binding  = 0) buffer testData 
-{
-	vec4 allData[];
-};
+layout (location = 0) in vec4 inPos;
+layout (location = 2) in vec2 inTexCoord;
+
+layout (location = 0) out vec2 texCoord;
 
 void main() {
-   gl_Position 	= vec4(allData[gl_VertexIndex].xyz, 1.0f);
-   gl_PointSize = 0.05f;
+	texCoord = inTexCoord;
+	gl_Position 	= inPos;
 }

@@ -19,6 +19,7 @@ namespace NCL::Rendering::Vulkan {
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
 		UniqueVulkanTexture computeTexture;
+		UniqueVulkanMesh quad;
 
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
