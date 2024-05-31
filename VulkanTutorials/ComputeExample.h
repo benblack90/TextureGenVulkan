@@ -24,8 +24,7 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
 
-		VulkanBuffer			particlePositions;
-		vk::UniqueDescriptorSet	imageDescriptor;
-		vk::UniqueDescriptorSetLayout	imageDescrLayout;
+		vk::UniqueDescriptorSet	imageDescriptor[2];
+		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
 	};
 }

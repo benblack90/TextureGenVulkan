@@ -26,11 +26,15 @@ ComputeExample::ComputeExample(Window& window) : VulkanTutorial(window)	{
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
 	//create descriptor set and descriptor set layout for the compute image
-	imageDescrLayout = DescriptorSetLayoutBuilder(device)
-		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eCompute | vk::ShaderStageFlagBits::eFragment)
+	imageDescrLayout[0] = DescriptorSetLayoutBuilder(device)
+		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eCompute)
 		.Build("Compute Data");
+	imageDescrLayout[1] = DescriptorSetLayoutBuilder(device)
+		.WithImageSamplers(1, 1, vk::ShaderStageFlagBits::eFragment)
+		.Build("Raster version");
 
-	imageDescriptor = CreateDescriptorSet(device, pool, *imageDescrLayout);
+	imageDescriptor[0] = CreateDescriptorSet(device, pool, *imageDescrLayout[0]);
+	imageDescriptor[1] = CreateDescriptorSet(device, pool, *imageDescrLayout[1]);
 
 	//build the texture to be used by the compute shader, and then actually turn it into an ImageDescriptor
 	TextureBuilder builder(renderer->GetDevice(), renderer->GetMemoryAllocator());
@@ -38,17 +42,18 @@ ComputeExample::ComputeExample(Window& window) : VulkanTutorial(window)	{
 		.UsingQueue(renderer->GetQueue(CommandBuffer::Graphics))
 		.WithDimension(hostWindow.GetScreenSize().x, hostWindow.GetScreenSize().y, 1)
 		.WithMips(false)
-		.WithUsages(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment)
+		.WithUsages(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled)
 		.WithLayout(vk::ImageLayout::eGeneral)
 		.WithFormat(vk::Format::eB8G8R8A8Unorm);
 	computeTexture = builder.Build("compute RW texture");
-	WriteStorageImageDescriptor(device, *imageDescriptor, 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
+	WriteStorageImageDescriptor(device, *imageDescriptor[0], 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
+	WriteImageDescriptor(device, *imageDescriptor[1], 1, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
 
 	//build the compute shader, and attach the compute image descriptor to the pipeline
 	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "BasicCompute.comp.spv"));
 	computePipeline = ComputePipelineBuilder(device)
 		.WithShader(computeShader)
-		.WithDescriptorSetLayout(0, *imageDescrLayout)
+		.WithDescriptorSetLayout(0, *imageDescrLayout[0])
 		.Build("Compute Pipeline");
 
 	//build the raster shader, and attach the compute image descriptor to the pipeline
@@ -61,7 +66,7 @@ ComputeExample::ComputeExample(Window& window) : VulkanTutorial(window)	{
 		.WithTopology(vk::PrimitiveTopology::eTriangleStrip)
 		.WithShader(rasterShader)
 		.WithColourAttachment(state.colourFormat)
-		.WithDescriptorSetLayout(0, *imageDescrLayout)
+		.WithDescriptorSetLayout(0, *imageDescrLayout[1])
 		.Build("Raster Pipeline");
 	
 }
@@ -70,13 +75,13 @@ void ComputeExample::RenderFrame(float dt) {
 	FrameState const& frameState = renderer->GetFrameState();
 	vk::CommandBuffer cmdBuffer = frameState.cmdBuffer;
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
-	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*imageDescriptor, 0, nullptr);
+	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*imageDescriptor[0], 0, nullptr);
 
 	cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x /16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
 
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eComputeShader, 
-		vk::PipelineStageFlagBits::eAllCommands, 
+		vk::PipelineStageFlagBits::eFragmentShader, 
 		vk::DependencyFlags(), 0, nullptr, 0, nullptr, 0, nullptr
 	);
 
@@ -89,7 +94,7 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, basicPipeline);
-	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *basicPipeline.layout, 0, 1, &*imageDescriptor, 0, nullptr);
+	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *basicPipeline.layout, 0, 1, &*imageDescriptor[1], 0, nullptr);
 	quad->Draw(cmdBuffer);
 
 	cmdBuffer.endRendering();
