@@ -12,9 +12,8 @@ void main()
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
-    float fade = sin(texelCoord.y/16.0f);
-    vec4 colour = vec4(fade,fade,fade,1.0);
-
+    float fade = sin(texelCoord.y/32.0f);
+    vec4 colour = vec4(0.0,0,max(fade, 0.5),1.0);
 
     imageStore(image, texelCoord, colour);
 }
