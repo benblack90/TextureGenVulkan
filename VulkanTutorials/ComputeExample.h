@@ -14,8 +14,10 @@ namespace NCL::Rendering::Vulkan {
 		ComputeExample(Window& window);
 		~ComputeExample() {}
 	protected:
-		void RenderFrame(float dt) override;
 
+		void RenderFrame(float dt) override;
+		void InitNoiseVals();
+		
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
 		UniqueVulkanTexture computeTexture;
@@ -24,6 +26,8 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
 
+		const Vector2 possGradients[4];
+		int perms[512];
 		vk::UniqueDescriptorSet	imageDescriptor[2];
 		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
 	};

@@ -13,9 +13,12 @@ using namespace Vulkan;
 
 const int PARTICLE_COUNT = 32 * 100;
 
-ComputeExample::ComputeExample(Window& window) : VulkanTutorial(window)	{
+ComputeExample::ComputeExample(Window& window)
+	: VulkanTutorial(window),
+	possGradients{ {1,1}, {-1,-1}, {1,-1}, {-1, 1} }
+{
 	VulkanInitialisation vkInit = DefaultInitialisation();
-	vkInit.	autoBeginDynamicRendering = false;
+	vkInit.autoBeginDynamicRendering = false;
 
 	renderer = new VulkanRenderer(window, vkInit);
 	InitTutorialObjects();
@@ -68,7 +71,9 @@ ComputeExample::ComputeExample(Window& window) : VulkanTutorial(window)	{
 		.WithColourAttachment(state.colourFormat)
 		.WithDescriptorSetLayout(0, *imageDescrLayout[1])
 		.Build("Raster Pipeline");
-	
+
+	InitNoiseVals();
+
 }
 
 void ComputeExample::RenderFrame(float dt) {
@@ -77,20 +82,20 @@ void ComputeExample::RenderFrame(float dt) {
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
 	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*imageDescriptor[0], 0, nullptr);
 
-	cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x /16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
+	cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
 
 	cmdBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eComputeShader, 
-		vk::PipelineStageFlagBits::eFragmentShader, 
+		vk::PipelineStageFlagBits::eComputeShader,
+		vk::PipelineStageFlagBits::eFragmentShader,
 		vk::DependencyFlags(), 0, nullptr, 0, nullptr, 0, nullptr
 	);
 
 
 	cmdBuffer.beginRendering(
 		DynamicRenderBuilder()
-			.WithColourAttachment(frameState.colourView)
-			.WithRenderArea(frameState.defaultScreenRect)
-			.Build()
+		.WithColourAttachment(frameState.colourView)
+		.WithRenderArea(frameState.defaultScreenRect)
+		.Build()
 	);
 
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, basicPipeline);
@@ -99,3 +104,13 @@ void ComputeExample::RenderFrame(float dt) {
 
 	cmdBuffer.endRendering();
 }
+
+void ComputeExample::InitNoiseVals()
+{
+	for (int i = 0; i < 512; i++)
+	{
+		perms[i] = i;
+	}
+}
+
+
