@@ -13,7 +13,6 @@ using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
 
-const int PARTICLE_COUNT = 32 * 100;
 
 ComputeExample::ComputeExample(Window& window)
 	: VulkanTutorial(window),

@@ -11,12 +11,41 @@ layout(set = 0, binding = 2) uniform constVectors
     vec2[512] constVec;
 };
 
+float Perlin2D(int xx, int yy, float freqX, float freqY)
+{
+    //bitwise & because it's faster than mod - calculates which 'grid' square it's in
+    int x = xx % 511;
+    int y = yy % 511;
+
+    vec2 topLeft = vec2(freqX, freqY - 1.0f);
+    vec2 topRight = vec2(freqX - 1.0f, freqY - 1.0f);
+    vec2 bottomLeft = vec2(freqX, freqY);
+    vec2 bottomRight = vec2(freqX - 1.0f, freqY);
+
+    //we're double-dipping into the constVectors to loop round it every 512. This way, it repeats
+    vec2 cvTopLeft = constVec[constVec[x] + y + 1];
+    vec2 cvTopRight = constVec[constVec[x + 1] + y + 1];
+    vec2 cvBottomLeft = constVec[constVec[x] + y];
+    vec2 cvBottomRight = constVec[constVec[x + 1] + y];
+
+    float dotTopL = dot(topLeft, cvTopLeft);
+    float dotTopR = dot(topRight, cvTopRight);
+    float dotBotL = dot(bottomLeft, cvBottomLeft);
+    float dotBotR = dot(bottomRight, cvBottomRight);
+    
+    float u = Ease(freqX);
+    float v = Ease(freqY);
+    return mix(u,mix(v,dotBotL, dotTopL), mix(v, dotBotR, dotTopR));
+}
+
+
+
 void main() 
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
-    float fade = sin(texelCoord.y/32.0f);
-    vec4 colour = vec4(0.0,0,max(fade, 0.5),1.0);
+    float noise = Perlin2D(texelCoord.x, texelCoord.y, 0.001f, 0.001f);
+    vec4 colour = vec4(noise, noise,noise,1);
 
     imageStore(image, texelCoord, colour);
 }

@@ -16,10 +16,8 @@ namespace NCL::Rendering::Vulkan {
 	public:
 		ComputeExample(Window& window);
 		~ComputeExample() {}
-
 		
 	protected:
-
 		void RenderFrame(float dt) override;
 		void InitConstantVectors();
 
