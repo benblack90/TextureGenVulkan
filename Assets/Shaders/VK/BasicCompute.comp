@@ -6,9 +6,10 @@ layout (local_size_x = 16, local_size_y = 16) in;
 
 //descriptor bindings for the pipeline
 layout(rgba8,set = 0, binding = 0) uniform image2D image;
-
-
-
+layout(set = 0, binding = 2) uniform constVectors
+{
+    vec2[512] constVec;
+};
 
 void main() 
 {

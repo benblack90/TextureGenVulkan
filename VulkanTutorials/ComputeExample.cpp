@@ -7,6 +7,8 @@ License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
 #include "ComputeExample.h"
 
+#include <random>
+
 using namespace NCL;
 using namespace Rendering;
 using namespace Vulkan;
@@ -28,9 +30,20 @@ ComputeExample::ComputeExample(Window& window)
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
+	InitConstantVectors();
+
+	constVectorBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
+		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
+		.WithHostVisibility()
+		.WithPersistentMapping()
+		.Build(sizeof(Vector4) * NUM_PERMUTATIONS, "Constant Vector Buffer");
+
+	constVectorBuffer.CopyData(constantVectors, sizeof(Vector4) * NUM_PERMUTATIONS);	
+
 	//create descriptor set and descriptor set layout for the compute image
 	imageDescrLayout[0] = DescriptorSetLayoutBuilder(device)
 		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eCompute)
+		.WithStorageBuffers(2, 1, vk::ShaderStageFlagBits::eCompute)
 		.Build("Compute Data");
 	imageDescrLayout[1] = DescriptorSetLayoutBuilder(device)
 		.WithImageSamplers(1, 1, vk::ShaderStageFlagBits::eFragment)
@@ -50,6 +63,7 @@ ComputeExample::ComputeExample(Window& window)
 		.WithFormat(vk::Format::eB8G8R8A8Unorm);
 	computeTexture = builder.Build("compute RW texture");
 	WriteStorageImageDescriptor(device, *imageDescriptor[0], 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
+	WriteBufferDescriptor(device, *imageDescriptor[0], 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
 	WriteImageDescriptor(device, *imageDescriptor[1], 1, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
 
 	//build the compute shader, and attach the compute image descriptor to the pipeline
@@ -72,7 +86,7 @@ ComputeExample::ComputeExample(Window& window)
 		.WithDescriptorSetLayout(0, *imageDescrLayout[1])
 		.Build("Raster Pipeline");
 
-	InitNoiseVals();
+	
 
 }
 
@@ -105,12 +119,16 @@ void ComputeExample::RenderFrame(float dt) {
 	cmdBuffer.endRendering();
 }
 
-void ComputeExample::InitNoiseVals()
+void ComputeExample::InitConstantVectors()
 {
-	for (int i = 0; i < 512; i++)
+	srand(time(0));
+	for (int i = 0; i < NUM_PERMUTATIONS; i++)
 	{
-		perms[i] = i;
+		Vector2 grad = possGradients[rand() % 4];
+		constantVectors[i] = Vector4(grad.x, grad.y, 0, 0);
 	}
 }
+
+
 
 
