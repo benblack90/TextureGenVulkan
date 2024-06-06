@@ -60,7 +60,11 @@ void main()
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
-    float noise = Perlin2D(texelCoord.x * 0.00075f, texelCoord.y * 0.00075f);
+
+    //this works out what the largest frequency multiplier can be, to avoid, in the maximum case, changing the texelCoord by going over 1
+    float freqLimitX = float(size.x) / float(size.x + 1.0f) / float(size.x);
+    float freqLimitY = float(size.y) / float(size.y + 1.0f) / float(size.y);
+    float noise = Perlin2D(texelCoord.x * freqLimitX, texelCoord.y *freqLimitY);
     noise += 1.0f;
     noise /= 2.0f;
     vec4 colour = vec4(0, 0,noise,1);
