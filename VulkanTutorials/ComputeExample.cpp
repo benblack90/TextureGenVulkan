@@ -15,8 +15,7 @@ using namespace Vulkan;
 
 
 ComputeExample::ComputeExample(Window& window)
-	: VulkanTutorial(window),
-	possGradients{ {1,1}, {-1,-1}, {1,-1}, {-1, 1} }
+	: VulkanTutorial(window)
 {
 	VulkanInitialisation vkInit = DefaultInitialisation();
 	vkInit.autoBeginDynamicRendering = false;
@@ -35,9 +34,9 @@ ComputeExample::ComputeExample(Window& window)
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()
 		.WithPersistentMapping()
-		.Build(sizeof(Vector4) * NUM_PERMUTATIONS, "Constant Vector Buffer");
+		.Build(sizeof(int) * NUM_PERMUTATIONS * 2, "Constant Vector Buffer");
 
-	constVectorBuffer.CopyData(constantVectors, sizeof(Vector4) * NUM_PERMUTATIONS);	
+	constVectorBuffer.CopyData(perms, sizeof(int) * NUM_PERMUTATIONS * 2);	
 
 	//create descriptor set and descriptor set layout for the compute image
 	imageDescrLayout[0] = DescriptorSetLayoutBuilder(device)
@@ -123,8 +122,16 @@ void ComputeExample::InitConstantVectors()
 	srand(time(0));
 	for (int i = 0; i < NUM_PERMUTATIONS; i++)
 	{
-		Vector2 grad = possGradients[rand() % 4];
-		constantVectors[i] = Vector4(grad.x, grad.y, 0, 0);
+		perms[i] = i;
+	}
+	for (int j = NUM_PERMUTATIONS -1; j > 0; j--) {
+		int index = std::round(rand() % (j));
+		int temp = perms[j];
+		perms[j] = perms[index];
+		perms[index] = temp;
+
+		perms[j + NUM_PERMUTATIONS] = perms[j];
+		perms[index + NUM_PERMUTATIONS] = temp;
 	}
 }
 

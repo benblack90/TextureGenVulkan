@@ -30,8 +30,7 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
 
-		const Vector2 possGradients[4];
-		Vector4 constantVectors[NUM_PERMUTATIONS];
+		int perms[NUM_PERMUTATIONS * 2];
 		vk::UniqueDescriptorSet	imageDescriptor[2];
 		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
 	};

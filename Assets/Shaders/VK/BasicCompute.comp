@@ -6,32 +6,48 @@ layout (local_size_x = 16, local_size_y = 16) in;
 
 //descriptor bindings for the pipeline
 layout(rgba8,set = 0, binding = 0) uniform image2D image;
-layout(set = 0, binding = 2) uniform constVectors
+
+layout(set = 0, binding = 2) buffer permutations
 {
-    vec2[512] constVec;
+    int[1024] perms;
 };
 
-float Perlin2D(int xx, int yy, float freqX, float freqY)
+vec2 GetConstVec(int x)
 {
-    //bitwise & because it's faster than mod - calculates which 'grid' square it's in
-    int x = xx % 511;
-    int y = yy % 511;
+    int hash = x & 3;
+    if(hash == 0) return vec2(1.0,1.0);
+    if(hash == 1) return vec2(-1.0, -1.0);
+    if(hash == 2) return vec2(-1.0, 1.0);
+    else return vec2(1.0, -1.0);
+}
 
-    vec2 topLeft = vec2(freqX, freqY - 1.0f);
-    vec2 topRight = vec2(freqX - 1.0f, freqY - 1.0f);
+float Ease(float val)
+{
+    return val * val * val * (val * (val * 6 - 15) + 10); 
+}
+
+
+float Perlin2D(float xx, float yy)
+{
+    int x = int(xx) & 511;
+    int y = int(yy) & 511;
+    float freqX = xx - int(xx);
+    float freqY = yy - int(yy);    
+    
     vec2 bottomLeft = vec2(freqX, freqY);
     vec2 bottomRight = vec2(freqX - 1.0f, freqY);
+    vec2 topLeft = vec2(freqX, freqY - 1.0f);
+    vec2 topRight = vec2(freqX - 1.0f, freqY - 1.0f);
 
-    //we're double-dipping into the constVectors to loop round it every 512. This way, it repeats
-    vec2 cvTopLeft = constVec[constVec[x] + y + 1];
-    vec2 cvTopRight = constVec[constVec[x + 1] + y + 1];
-    vec2 cvBottomLeft = constVec[constVec[x] + y];
-    vec2 cvBottomRight = constVec[constVec[x + 1] + y];
+    int cvBottomLeft = perms[perms[x] + y];
+    int cvBottomRight = perms[perms[x + 1] + y];
+    int cvTopLeft = perms[perms[x] + y + 1];
+    int cvTopRight = perms[perms[x + 1] + y + 1];
 
-    float dotTopL = dot(topLeft, cvTopLeft);
-    float dotTopR = dot(topRight, cvTopRight);
-    float dotBotL = dot(bottomLeft, cvBottomLeft);
-    float dotBotR = dot(bottomRight, cvBottomRight);
+    float dotTopL = dot(topLeft, GetConstVec(cvTopLeft));
+    float dotTopR = dot(topRight, GetConstVec(cvTopRight));
+    float dotBotL = dot(bottomLeft, GetConstVec(cvBottomLeft));
+    float dotBotR = dot(bottomRight, GetConstVec(cvBottomRight));
     
     float u = Ease(freqX);
     float v = Ease(freqY);
@@ -44,8 +60,10 @@ void main()
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
-    float noise = Perlin2D(texelCoord.x, texelCoord.y, 0.001f, 0.001f);
-    vec4 colour = vec4(noise, noise,noise,1);
+    float noise = Perlin2D(texelCoord.x * 0.00075f, texelCoord.y * 0.00075f);
+    noise += 1.0f;
+    noise /= 2.0f;
+    vec4 colour = vec4(0, 0,noise,1);
 
     imageStore(image, texelCoord, colour);
 }
