@@ -26,11 +26,6 @@ float Ease(float val)
     return val * val * val * (val * (val * 6.0f - 15.0f) + 10.0f); 
 }
 
-
-float Lerp(float t, float a1, float a2) {
-	return a1 + t*(a2-a1);
-}
-
 float Perlin2D(float xx, float yy)
 {
     
@@ -56,9 +51,7 @@ float Perlin2D(float xx, float yy)
     
     float u = Ease(freqX);
     float v = Ease(freqY);
-    return Lerp(u,
-    Lerp(v,dotBotL, dotTopL), 
-    Lerp(v, dotBotR, dotTopR));
+    return mix(    mix(dotBotL, dotTopL, v),  mix(dotBotR, dotTopR, v), u);
 
 }
 
