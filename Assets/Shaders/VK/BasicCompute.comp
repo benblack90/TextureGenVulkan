@@ -15,25 +15,30 @@ layout(set = 0, binding = 2) buffer permutations
 vec2 GetConstVec(int x)
 {
     int hash = x & 3;
-    if(hash == 0) return vec2(1.0,1.0);
-    if(hash == 1) return vec2(-1.0, -1.0);
-    if(hash == 2) return vec2(-1.0, 1.0);
-    else return vec2(1.0, -1.0);
+    if(hash == 0) return vec2(1.0f,1.0f);
+    if(hash == 1) return vec2(-1.0f, 1.0f);
+    if(hash == 2) return vec2(-1.0f, -1.0f);
+    else return vec2(1.0f, -1.0f);
 }
 
 float Ease(float val)
 {
-    return val * val * val * (val * (val * 6 - 15) + 10); 
+    return val * val * val * (val * (val * 6.0f - 15.0f) + 10.0f); 
 }
 
 
+float Lerp(float t, float a1, float a2) {
+	return a1 + t*(a2-a1);
+}
+
 float Perlin2D(float xx, float yy)
 {
+    
     int x = int(xx) & 511;
     int y = int(yy) & 511;
     float freqX = xx - int(xx);
-    float freqY = yy - int(yy);    
-    
+    float freqY = yy - int(yy);  
+
     vec2 bottomLeft = vec2(freqX, freqY);
     vec2 bottomRight = vec2(freqX - 1.0f, freqY);
     vec2 topLeft = vec2(freqX, freqY - 1.0f);
@@ -51,20 +56,19 @@ float Perlin2D(float xx, float yy)
     
     float u = Ease(freqX);
     float v = Ease(freqY);
-    return mix(u,mix(v,dotBotL, dotTopL), mix(v, dotBotR, dotTopR));
+    return Lerp(u,
+    Lerp(v,dotBotL, dotTopL), 
+    Lerp(v, dotBotR, dotTopR));
+
 }
-
-
 
 void main() 
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
 
-    //this works out what the largest frequency multiplier can be, to avoid, in the maximum case, changing the texelCoord by going over 1
-    float freqLimitX = float(size.x) / float(size.x + 1.0f) / float(size.x);
-    float freqLimitY = float(size.y) / float(size.y + 1.0f) / float(size.y);
-    float noise = Perlin2D(texelCoord.x * freqLimitX, texelCoord.y *freqLimitY);
+    float frequency = 0.005f;
+    float noise = Perlin2D(texelCoord.x * 0.05, texelCoord.y * 0.05);
     noise += 1.0f;
     noise /= 2.0f;
     vec4 colour = vec4(0, 0,noise,1);
