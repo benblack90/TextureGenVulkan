@@ -51,7 +51,7 @@ float Perlin2d(float xx, float yy)
         
     float u = Ease(freqX);
     float v = Ease(freqY);
-    return mix(    mix(dotBotL, dotTopL, v),  mix(dotBotR, dotTopR, v), u);
+    return (mix(    mix(dotBotL, dotTopL, v),  mix(dotBotR, dotTopR, v), u));
 
 }
 
@@ -61,8 +61,8 @@ float fracBrownMotion(vec2 coords)
     int octaves = 8;
     float result = 0.0f;
     float gain = 0.5f;
-    float freq = 0.002f;
-    float amplitude = 0.5f;
+    float freq = 1.0f;
+    float amplitude = 1.0f;
 
     for(int i = 0; i < octaves; i++)
     {
@@ -70,7 +70,15 @@ float fracBrownMotion(vec2 coords)
         freq *= 2.0f;
         amplitude *= gain;
     }
-     return result;
+     return (result + 1) / 2;
+}
+
+float domainWarp(vec2 coords)
+{
+    //return fracBrownMotion(coords);
+    vec2 warpedInput = vec2(fracBrownMotion(coords + vec2(0.0, 0.0)), fracBrownMotion(coords + vec2(5.2, 1.3)));
+
+    return fracBrownMotion(coords + 4.0 * warpedInput);
 }
 
 void main() 
@@ -78,10 +86,9 @@ void main()
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
 
-    float noise = fracBrownMotion(texelCoord);
-    noise += 1.0f;
-    noise /= 2.0f;
-    vec4 colour = vec4(0, noise,noise,1);
+    float noise = domainWarp(texelCoord * 0.0025);
+
+    vec4 colour = vec4(noise, noise,noise,1);
 
     imageStore(image, texelCoord, colour);
 }
