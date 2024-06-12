@@ -14,11 +14,10 @@ layout(set = 0, binding = 2) buffer permutations
 
 vec2 GetConstVec(int x)
 {
-    int hash = x & 3;
-    if(hash == 0) return vec2(1.0f,1.0f);
-    if(hash == 1) return vec2(-1.0f, 1.0f);
-    if(hash == 2) return vec2(-1.0f, -1.0f);
-    else return vec2(1.0f, -1.0f);
+  //biasing the noise to be horizontal  
+    int hash = x & 1;
+    if(hash == 0) return vec2(0.0, 1.0);
+    else return vec2 (0.0, -1.0);    
 }
 
 float Ease(float val)
@@ -66,19 +65,24 @@ float fracBrownMotion(vec2 coords)
 
     for(int i = 0; i < octaves; i++)
     {
-        result += amplitude * Perlin2d(coords.x * freq, coords.y * freq);
+        result += amplitude * (Perlin2d(coords.x * freq, coords.y * freq));
         freq *= 2.0f;
         amplitude *= gain;
-    }
-     return (result + 1) / 2;
+    } 
+    return (result + 1) / 2;
 }
 
 float domainWarp(vec2 coords)
 {
     //return fracBrownMotion(coords);
-    vec2 warpedInput = vec2(fracBrownMotion(coords + vec2(0.0, 0.0)), fracBrownMotion(coords + vec2(5.2, 1.3)));
+    //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 10 or so)
+    vec2 warpedInput = vec2(fracBrownMotion(coords + vec2(6.6, 7.4)), fracBrownMotion(coords + vec2(0.5, 6.3)));
 
-    return fracBrownMotion(coords + 4.0 * warpedInput);
+    //the multiplying component here appears to increase or decrease 'swirliness'
+    float warpFactor = 3.0f;
+    warpedInput = vec2(fracBrownMotion(coords + warpFactor * warpedInput + vec2(4.4,7.9)), fracBrownMotion(coords + warpFactor * warpedInput + vec2(2.0,8.4)));
+
+    return fracBrownMotion(coords + warpFactor * warpedInput);
 }
 
 void main() 
@@ -87,7 +91,6 @@ void main()
 	ivec2 size = imageSize(image);
 
     float noise = domainWarp(texelCoord * 0.0025);
-
     vec4 colour = vec4(noise, noise,noise,1);
 
     imageStore(image, texelCoord, colour);
