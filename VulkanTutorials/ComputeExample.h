@@ -20,6 +20,7 @@ namespace NCL::Rendering::Vulkan {
 	protected:
 		void RenderFrame(float dt) override;
 		void InitConstantVectors();
+		void InitTestConstVectors();
 
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;

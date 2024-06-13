@@ -76,13 +76,13 @@ float fracBrownMotion(vec2 coords)
 
 float domainWarp(vec2 coords, out vec2 warp1, out vec2 warp2)
 {
-    //return fracBrownMotion(coords);
 
     //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 10 or so)
     warp1 = vec2(fracBrownMotion(coords + vec2(61.6, 7.4)), fracBrownMotion(coords + vec2(0.5, 61.3)));
-    warp2 = vec2(fracBrownMotion(coords + warp1 + vec2(14.4,7.9)), fracBrownMotion(coords * warp1 + vec2(21.0,8.4)));
+    float warpFactor = 1.5;
+    warp2 = vec2(fracBrownMotion(coords + warpFactor * warp1 + vec2(14.4,7.9)), fracBrownMotion(coords * warp1 + vec2(21.0,8.4)));
    
-    return fracBrownMotion(coords + warp2 * 2.0);
+    return fracBrownMotion(coords + warp2 * warpFactor);
 }
 
 mat2 rotMat(float amt){
@@ -103,12 +103,12 @@ void main()
     
     //storage for our domain warps, so we can use them later for colouring
     vec2 warp1; vec2 warp2;
-    float noise = domainWarp(texelCoord * 0.0075, warp1, warp2);
+    float warp3 = domainWarp(texelCoord * 0.0075, warp1, warp2);
     vec3 bass = vec3(0.02, 0.02, 0.35);
     vec3 superBass = bass * bass;
-    vec3 mid = bass * vec3(2,16,2);
-    vec3 colourMix = mix(bass, mid,noise);
-    colourMix = mix(colourMix, superBass, length(warp2));
+    vec3 mid = bass * vec3(2,25,2);
+    vec3 colourMix = mix(bass, superBass,Ease(length(warp2)));
+    colourMix = mix(colourMix, mid, warp3);
 
     vec4 colour = vec4(colourMix,1);
 
