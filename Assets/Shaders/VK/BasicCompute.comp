@@ -7,6 +7,9 @@ layout (local_size_x = 16, local_size_y = 16) in;
 //descriptor bindings for the pipeline
 layout(rgba8,set = 0, binding = 0) uniform image2D image;
 
+
+const float PI = 3.14159265359;
+
 layout(set = 0, binding = 2) buffer permutations
 {
     int[1024] perms;
@@ -56,7 +59,6 @@ float Perlin2d(float xx, float yy)
 
 float fracBrownMotion(vec2 coords)
 {
-
     int octaves = 8;
     float result = 0.0f;
     float gain = 0.5f;
@@ -72,26 +74,44 @@ float fracBrownMotion(vec2 coords)
     return (result + 1) / 2;
 }
 
-float domainWarp(vec2 coords)
+float domainWarp(vec2 coords, out vec2 warp1, out vec2 warp2)
 {
     //return fracBrownMotion(coords);
+
     //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 10 or so)
-    vec2 warpedInput = vec2(fracBrownMotion(coords + vec2(6.6, 7.4)), fracBrownMotion(coords + vec2(0.5, 6.3)));
+    warp1 = vec2(fracBrownMotion(coords + vec2(61.6, 7.4)), fracBrownMotion(coords + vec2(0.5, 61.3)));
+    warp2 = vec2(fracBrownMotion(coords + warp1 + vec2(14.4,7.9)), fracBrownMotion(coords * warp1 + vec2(21.0,8.4)));
+   
+    return fracBrownMotion(coords + warp2 * 2.0);
+}
 
-    //the multiplying component here appears to increase or decrease 'swirliness'
-    float warpFactor = 3.0f;
-    warpedInput = vec2(fracBrownMotion(coords + warpFactor * warpedInput + vec2(4.4,7.9)), fracBrownMotion(coords + warpFactor * warpedInput + vec2(2.0,8.4)));
+mat2 rotMat(float amt){
+    return mat2(cos(amt),-sin(amt),
+                sin(amt),cos(amt));
+}
 
-    return fracBrownMotion(coords + warpFactor * warpedInput);
+float lines(in vec2 pos, float b){
+    float scale = 10.0f;
+    pos *= scale;
+    return smoothstep(0.0f,0.5f + b * 0.5f, abs((sin(pos.y * PI) + b * 2.0f)) * 0.5f);
 }
 
 void main() 
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
+    
+    //storage for our domain warps, so we can use them later for colouring
+    vec2 warp1; vec2 warp2;
+    float noise = domainWarp(texelCoord * 0.0075, warp1, warp2);
+    vec3 bass = vec3(0.02, 0.02, 0.35);
+    vec3 superBass = bass * bass;
+    vec3 mid = bass * vec3(2,16,2);
+    vec3 colourMix = mix(bass, mid,noise);
+    colourMix = mix(colourMix, superBass, length(warp2));
 
-    float noise = domainWarp(texelCoord * 0.0025);
-    vec4 colour = vec4(noise, noise,noise,1);
+    vec4 colour = vec4(colourMix,1);
+
 
     imageStore(image, texelCoord, colour);
 }
