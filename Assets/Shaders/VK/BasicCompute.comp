@@ -104,10 +104,10 @@ void main()
     //storage for our domain warps, so we can use them later for colouring
     vec2 warp1; vec2 warp2;
     float warp3 = domainWarp(texelCoord * 0.0075, warp1, warp2);
-    vec3 bass = vec3(0.02, 0.02, 0.35);
-    vec3 superBass = bass * bass;
-    vec3 mid = bass * vec3(2,25,2);
-    vec3 colourMix = mix(bass, superBass,Ease(length(warp2)));
+    vec3 superBass = vec3(0.4, 0.251, 0.161);
+    vec3 bass = vec3(0.569, 0.282, 0.082);
+    vec3 mid = vec3(0.878, 0.729, 0.463);
+    vec3 colourMix = mix(bass, superBass,length(warp2));
     colourMix = mix(colourMix, mid, warp3);
 
     vec4 colour = vec4(colourMix,1);
