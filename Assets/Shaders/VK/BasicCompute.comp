@@ -18,9 +18,28 @@ layout(set = 0, binding = 2) buffer permutations
 vec2 GetConstVec(int x)
 {
   //biasing the noise to be horizontal  
+  
+    int hash = x % 6;
+    if(hash == 0) return vec2(0.0, 2);
+    if(hash == 1) return vec2 (0.0, -2);    
+    if(hash == 2) return vec2(0.1,0.9);
+    if(hash == 3) return vec2(-0.1, 0.9);
+    if(hash == 4) return vec2(0.1, -0.9);
+    if(hash == 5) return vec2(-0.1, -0.9);
+    
+
+    /*
     int hash = x & 1;
     if(hash == 0) return vec2(0.0, 1.0);
-    else return vec2 (0.0, -1.0);    
+    else return vec2 (0.0, -1.0);  
+    */
+    /*
+    int hash = x % 3;
+    if (hash == 0) return vec2(-1.0,-1.0);
+    if (hash == 1) return vec2(1.0,1.0);
+    if (hash == 2) return vec2(1.0,-1.0);
+    else return vec2(-1.0,1.0);
+    */
 }
 
 float Ease(float val)
@@ -76,7 +95,7 @@ float fracBrownMotion(vec2 coords)
 
 float domainWarp(vec2 coords, out vec2 warp1, out vec2 warp2)
 {
-
+    //return fracBrownMotion(coords);
     //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 10 or so)
     warp1 = vec2(fracBrownMotion(coords + vec2(61.6, 7.4)), fracBrownMotion(coords + vec2(0.5, 61.3)));
     float warpFactor = 1.5;
@@ -91,7 +110,7 @@ mat2 rotMat(float amt){
 }
 
 float lines(in vec2 pos, float b){
-    float scale = 10.0f;
+    float scale = 1.0f;
     pos *= scale;
     return smoothstep(0.0f,0.5f + b * 0.5f, abs((sin(pos.y * PI) + b * 2.0f)) * 0.5f);
 }
@@ -111,10 +130,12 @@ void main()
     vec3 mixBases = mix(bass, superBass,length(warp2));
     vec3 colourMix1 = mix(mixBases, midYel, warp3);
     vec3 colourMix2 = mix(mixBases, midRed, warp3);
-    float stripey = lines(texelCoord * 0.00075,0.1);
+    float stripey = lines(texelCoord * 0.0075,0.1);
     
 
     vec4 colour = vec4(mix(colourMix1, colourMix2, stripey),1);
+
+    //colour = vec4(warp3, warp3, warp3, 1);
 
 
     imageStore(image, texelCoord, colour);
