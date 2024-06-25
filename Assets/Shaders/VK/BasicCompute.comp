@@ -20,14 +20,13 @@ vec2 GetConstVec(int x)
   //biasing the noise to be horizontal  
   
     int hash = x % 6;
-    if(hash == 0) return vec2(0.0, 2);
-    if(hash == 1) return vec2 (0.0, -2);    
-    if(hash == 2) return vec2(0.1,0.9);
-    if(hash == 3) return vec2(-0.1, 0.9);
-    if(hash == 4) return vec2(0.1, -0.9);
-    if(hash == 5) return vec2(-0.1, -0.9);
+    if(hash == 0) return vec2(0.0, 1.4142);
+    if(hash == 1) return vec2 (0.0, -1.4142);    
+    if(hash == 2) return vec2(0.2455732529,1.392715124);
+    if(hash == 3) return vec2(-0.2455732529, 1.392715124);
+    if(hash == 4) return vec2(0.2455732529, -1.392715124);
+    if(hash == 5) return vec2(-0.2455732529, -1.392715124);
     
-
     /*
     int hash = x & 1;
     if(hash == 0) return vec2(0.0, 1.0);
@@ -93,13 +92,13 @@ float fracBrownMotion(vec2 coords)
     return (result + 1) / 2;
 }
 
-float domainWarp(vec2 coords, out vec2 warp1, out vec2 warp2)
+float domainWarp(vec2 coords, float warpFactor, out vec2 warp1, out vec2 warp2)
 {
     //return fracBrownMotion(coords);
-    //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 10 or so)
-    warp1 = vec2(fracBrownMotion(coords + vec2(61.6, 7.4)), fracBrownMotion(coords + vec2(0.5, 61.3)));
-    float warpFactor = 1.5;
-    warp2 = vec2(fracBrownMotion(coords + warpFactor * warp1 + vec2(14.4,7.9)), fracBrownMotion(coords * warp1 + vec2(21.0,8.4)));
+    //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 100 or so)
+    vec2 posWarp = vec2(fracBrownMotion(coords + vec2(1.6, 7.4)), fracBrownMotion(coords));
+    warp1 = vec2(fracBrownMotion(coords + vec2(1.6, 7.4)), fracBrownMotion(coords));
+    warp2 = vec2(fracBrownMotion(coords + warpFactor * warp1 + vec2(14.4,7.9)), fracBrownMotion(coords));
    
     return fracBrownMotion(coords + warp2 * warpFactor);
 }
@@ -118,24 +117,26 @@ float lines(in vec2 pos, float b){
 void main() 
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    vec2 coordF = texelCoord;
+    coordF.y *= 0.0075;
+    coordF.x *= 0.0025;
 	ivec2 size = imageSize(image);
     
     //storage for our domain warps, so we can use them later for colouring
     vec2 warp1; vec2 warp2;
-    float warp3 = domainWarp(texelCoord * 0.0075, warp1, warp2);
+    float warp3 = domainWarp(coordF,2.5, warp1, warp2);
     vec3 superBass = vec3(0.4, 0.251, 0.161);
-    vec3 bass = vec3(0.569, 0.282, 0.082);
+    vec3 bass = vec3(0.369, 0.082, 0.0082);
     vec3 midYel = vec3(0.878, 0.729, 0.463);
     vec3 midRed = vec3(0.722, 0.435, 0.235);
     vec3 mixBases = mix(bass, superBass,length(warp2));
-    vec3 colourMix1 = mix(mixBases, midYel, warp3);
+    vec3 colourMix1 = mix(mixBases, midYel, length(warp2));
     vec3 colourMix2 = mix(mixBases, midRed, warp3);
     float stripey = lines(texelCoord * 0.0075,0.1);
     
 
-    vec4 colour = vec4(mix(colourMix1, colourMix2, stripey),1);
+    vec4 colour = vec4(mix(colourMix2, colourMix1,warp3),1);
 
-    //colour = vec4(warp3, warp3, warp3, 1);
 
 
     imageStore(image, texelCoord, colour);
