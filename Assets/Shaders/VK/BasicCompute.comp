@@ -75,9 +75,8 @@ float Perlin2d(float xx, float yy)
 
 }
 
-float fracBrownMotion(vec2 coords)
+float fracBrownMotion(vec2 coords, int octaves)
 {
-    int octaves = 6;
     float result = 0.0f;
     float gain = 0.5f;
     float freq = 1.0f;
@@ -96,11 +95,11 @@ float domainWarp(vec2 coords, float warpFactor, out vec2 warp1, out vec2 warp2)
 {
     //return fracBrownMotion(coords);
     //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 100 or so)
-    vec2 posWarp = vec2(fracBrownMotion(coords + vec2(1.6, 7.4)), fracBrownMotion(coords));
-    warp1 = vec2(fracBrownMotion(coords + vec2(1.6, 7.4)), fracBrownMotion(coords));
-    warp2 = vec2(fracBrownMotion(coords + warpFactor * warp1 + vec2(14.4,7.9)), fracBrownMotion(coords));
+    vec2 posWarp = vec2(fracBrownMotion(coords + vec2(1.6, 7.4), 5), fracBrownMotion(coords,5));
+    warp1 = vec2(fracBrownMotion(coords + vec2(1.6, 7.4),5), fracBrownMotion(coords,5));
+    warp2 = vec2(fracBrownMotion(coords + warpFactor * warp1 + vec2(14.4,7.9),5), fracBrownMotion(coords,5));
 
-    return fracBrownMotion(coords + warp2 * warpFactor);
+    return fracBrownMotion(coords + warp2 * warpFactor, 5);
 }
 
 mat2 rotMat(float amt){
@@ -123,18 +122,18 @@ void main()
     coordF.x *= freq * 0.5;
 	ivec2 size = imageSize(image);
 
-    float warping = fracBrownMotion(coordF * 2);
-    float colour1 = fracBrownMotion(vec2(coordF.x, coordF.y + warping));
-    float colour2 = fracBrownMotion(vec2(coordF.x, abs(coordF.y - warping)));
-    float bassDetail = fracBrownMotion(vec2(coordF.x, coordF.y + warping * 2));
+    float warping = fracBrownMotion(coordF * 1.5, 6);
+    float colour1 = fracBrownMotion(vec2(coordF.x, coordF.y + warping),4);
+    float colour2 = fracBrownMotion(vec2(coordF.x, abs(coordF.y - warping)),4);
+    float bassDetail = fracBrownMotion(vec2(coordF.x*2, coordF.y + warping * 2),5);
     vec3 bass = vec3(0.369, 0.082, 0.0082);
     vec3 superBass = bass * bass;
-    vec3 midYel = vec3(0.878, 0.729, 0.463);
-    vec3 midRed = vec3(0.722, 0.435, 0.235);
+    vec3 midYel = vec3(0.741, 0.643, 0.435);
+    vec3 midRed = vec3(0.541, 0.373, 0.247);
    
-   vec3 col = mix(bass, superBass,smoothstep(0.0, 1.0, bassDetail)); 
-   col = mix(col, midYel, smoothstep(0.4, 0.6,colour1));
-   col = mix(col, midRed, smoothstep(0.2, 0.8, colour2));
+   vec3 col = mix(bass, superBass, smoothstep(0.0,1.0,bassDetail));
+   col = mix(midRed, col,smoothstep(0.0,0.8,colour1));
+   col = mix(col, midYel, smoothstep(0.1,1.0,colour2));
    
     
 
