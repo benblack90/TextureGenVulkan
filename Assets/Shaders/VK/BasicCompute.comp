@@ -133,7 +133,7 @@ void main()
    
    vec3  col = mix(orng, bass, smoothstep(0.0,1.0,colour1));
    col = mix(col, yel, smoothstep(0.3,1.0,colour2));
-   //col = mix(superBass, col, smoothstep(0.0,1.0,bassDetail));
+   col = mix(superBass, col, smoothstep(0.0,0.4,bassDetail));
    
     
 
