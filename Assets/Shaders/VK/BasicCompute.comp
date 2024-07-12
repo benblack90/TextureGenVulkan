@@ -123,17 +123,17 @@ void main()
 	ivec2 size = imageSize(image);
 
     float warping = fracBrownMotion(coordF * 1.05, 6);
-    float colour1 = fracBrownMotion(vec2(coordF.x, coordF.y + warping),4);
-    float colour2 = fracBrownMotion(vec2(coordF.x, abs(coordF.y - warping)),4);
-    float bassDetail = fracBrownMotion(vec2(coordF.x*2, coordF.y + warping * 2),3);
+    float colour1 = fracBrownMotion(vec2(warping, coordF.y + warping),4);
+    float colour2 = fracBrownMotion(vec2(warping, abs(coordF.y - warping)),4);
+    float bassDetail = fracBrownMotion(vec2(warping, coordF.y + warping),6);
     vec3 bass = vec3(0.369, 0.082, 0.0082);
     vec3 superBass = bass * bass;
     vec3 yel = vec3(0.741, 0.643, 0.435);
-    vec3 orng = vec3(0.741, 0.275, 0.082);
+    vec3 orng = vec3(0.639, 0.286, 0.137);
    
    vec3  col = mix(orng, bass, smoothstep(0.0,1.0,colour1));
    col = mix(col, yel, smoothstep(0.3,1.0,colour2));
-   col = mix(col, superBass, smoothstep(0.4, 1.0, bassDetail));
+   //col = mix(superBass, col, smoothstep(0.0,1.0,bassDetail));
    
     
 
