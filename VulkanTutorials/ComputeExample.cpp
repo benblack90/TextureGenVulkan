@@ -93,6 +93,8 @@ void ComputeExample::RenderFrame(float dt) {
 	FrameState const& frameState = renderer->GetFrameState();
 	vk::CommandBuffer cmdBuffer = frameState.cmdBuffer;
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
+	Vector3 positionUniform = { runTime, 0.0f, 0.0f };
+	cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
 	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*imageDescriptor[0], 0, nullptr);
 
 	cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
@@ -133,11 +135,6 @@ void ComputeExample::InitConstantVectors()
 
 		perms[j + NUM_PERMUTATIONS] = perms[j];
 		perms[index + NUM_PERMUTATIONS] = temp;
-	}
-
-	for (int i = 0; i < 1024; i++)
-	{
-		std::cout << perms[i] << '\n';
 	}
 }
 

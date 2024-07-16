@@ -7,6 +7,10 @@ layout (local_size_x = 16, local_size_y = 16) in;
 //descriptor bindings for the pipeline
 layout(rgba8,set = 0, binding = 0) uniform image2D image;
 
+layout(push_constant) uniform sinTime
+{
+	vec3 positionOffset;
+};
 
 const float PI = 3.14159265359;
 
@@ -91,41 +95,20 @@ float fracBrownMotion(vec2 coords, int octaves)
     return (result + 1) / 2;
 }
 
-float domainWarp(vec2 coords, float warpFactor, out vec2 warp1, out vec2 warp2)
-{
-    //return fracBrownMotion(coords);
-    //the numbers to offset the brownian motion calls are arbitrary - we could use basically anything reasonably small (i.e. under 100 or so)
-    vec2 posWarp = vec2(fracBrownMotion(coords + vec2(1.6, 7.4), 5), fracBrownMotion(coords,5));
-    warp1 = vec2(fracBrownMotion(coords + vec2(1.6, 7.4),5), fracBrownMotion(coords,5));
-    warp2 = vec2(fracBrownMotion(coords + warpFactor * warp1 + vec2(14.4,7.9),5), fracBrownMotion(coords,5));
-
-    return fracBrownMotion(coords + warp2 * warpFactor, 5);
-}
-
-mat2 rotMat(float amt){
-    return mat2(cos(amt),-sin(amt),
-                sin(amt),cos(amt));
-}
-
-float lines(in vec2 pos, float b){
-    float scale = 1.0f;
-    pos *= scale;
-    return smoothstep(0.0f,0.5f + b * 0.5f, abs((sin(pos.y * PI) + b * 2.0f)) * 0.5f);
-}
-
 void main() 
 {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec2 coordF = texelCoord;
     float freq = 0.01;
-    coordF.y *= freq;
-    coordF.x *= freq * 0.5;
+    coordF *= freq;
 	ivec2 size = imageSize(image);
 
-    float warping = fracBrownMotion(coordF * 1.05, 6);
+    float warping = fracBrownMotion(coordF * 0.65, 6);
+    float warpingOff = fracBrownMotion(vec2(coordF.x * 0.75 + positionOffset.x * 0.03,coordF.y * 0.75), 6);
+    float warpingOff2 = fracBrownMotion(vec2(coordF.x * 0.75 + positionOffset.x * 0.1,coordF.y * 0.75), 6);
     float colour1 = fracBrownMotion(vec2(warping, coordF.y + warping),4);
-    float colour2 = fracBrownMotion(vec2(warping, abs(coordF.y - warping)),4);
-    float bassDetail = fracBrownMotion(vec2(warping, coordF.y + warping),6);
+    float colour2 = fracBrownMotion(vec2(warpingOff2, abs(coordF.y - warping)),4);
+    float bassDetail = fracBrownMotion(vec2(warpingOff, coordF.y + warping),6);
     vec3 bass = vec3(0.369, 0.082, 0.0082);
     vec3 superBass = bass * bass;
     vec3 yel = vec3(0.741, 0.643, 0.435);
@@ -133,12 +116,9 @@ void main()
    
    vec3  col = mix(orng, bass, smoothstep(0.0,1.0,colour1));
    col = mix(col, yel, smoothstep(0.3,1.0,colour2));
-   col = mix(superBass, col, smoothstep(0.0,0.4,bassDetail));
+   col = mix(superBass, col, smoothstep(0.0,0.35,bassDetail));
    
+   vec4 colour = vec4(col,1);
     
-
-    vec4 colour = vec4(col,1);
-    
-
-    imageStore(image, texelCoord, colour);
+   imageStore(image, texelCoord, colour);
 }
