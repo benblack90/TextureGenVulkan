@@ -32,7 +32,9 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	computePipeline;
 
 		int perms[NUM_PERMUTATIONS * 2];
-		vk::UniqueDescriptorSet	imageDescriptor[2];
+		int currentTex;
+		std::vector<vk::UniqueDescriptorSet> planetDescr;
+		vk::UniqueDescriptorSet vertFragDescr;
 		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
 	};
 }

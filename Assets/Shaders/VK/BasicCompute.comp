@@ -30,19 +30,7 @@ vec2 GetConstVec(int x)
     if(hash == 3) return vec2(-0.2455732529, 1.392715124);
     if(hash == 4) return vec2(0.2455732529, -1.392715124);
     if(hash == 5) return vec2(-0.2455732529, -1.392715124);
-    
-    /*
-    int hash = x & 1;
-    if(hash == 0) return vec2(0.0, 1.0);
-    else return vec2 (0.0, -1.0);  
-    */
-    /*
-    int hash = x % 3;
-    if (hash == 0) return vec2(-1.0,-1.0);
-    if (hash == 1) return vec2(1.0,1.0);
-    if (hash == 2) return vec2(1.0,-1.0);
-    else return vec2(-1.0,1.0);
-    */
+
 }
 
 float Ease(float val)

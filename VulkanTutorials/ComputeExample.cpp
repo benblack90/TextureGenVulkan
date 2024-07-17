@@ -31,6 +31,8 @@ ComputeExample::ComputeExample(Window& window)
 	//InitTestConstVectors();
 	InitConstantVectors();
 
+	currentTex = 0;
+
 	constVectorBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()
@@ -48,8 +50,8 @@ ComputeExample::ComputeExample(Window& window)
 		.WithImageSamplers(1, 1, vk::ShaderStageFlagBits::eFragment)
 		.Build("Raster version");
 
-	imageDescriptor[0] = CreateDescriptorSet(device, pool, *imageDescrLayout[0]);
-	imageDescriptor[1] = CreateDescriptorSet(device, pool, *imageDescrLayout[1]);
+	planetDescr.push_back(CreateDescriptorSet(device, pool, *imageDescrLayout[0]));
+	vertFragDescr = CreateDescriptorSet(device, pool, *imageDescrLayout[1]);
 
 	//build the texture to be used by the compute shader, and then actually turn it into an ImageDescriptor
 	TextureBuilder builder(renderer->GetDevice(), renderer->GetMemoryAllocator());
@@ -61,9 +63,9 @@ ComputeExample::ComputeExample(Window& window)
 		.WithLayout(vk::ImageLayout::eGeneral)
 		.WithFormat(vk::Format::eB8G8R8A8Unorm);
 	computeTexture = builder.Build("compute RW texture");
-	WriteStorageImageDescriptor(device, *imageDescriptor[0], 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
-	WriteBufferDescriptor(device, *imageDescriptor[0], 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
-	WriteImageDescriptor(device, *imageDescriptor[1], 1, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
+	WriteStorageImageDescriptor(device, *planetDescr[0], 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
+	WriteBufferDescriptor(device, *planetDescr[0], 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
+	WriteImageDescriptor(device, *vertFragDescr, 1, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
 
 	//build the compute shader, and attach the compute image descriptor to the pipeline
 	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "BasicCompute.comp.spv"));
@@ -95,7 +97,7 @@ void ComputeExample::RenderFrame(float dt) {
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
 	Vector3 positionUniform = { runTime, 0.0f, 0.0f };
 	cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
-	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*imageDescriptor[0], 0, nullptr);
+	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[currentTex], 0, nullptr);
 
 	cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
 
@@ -114,7 +116,7 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, basicPipeline);
-	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *basicPipeline.layout, 0, 1, &*imageDescriptor[1], 0, nullptr);
+	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *basicPipeline.layout, 0, 1, &*vertFragDescr, 0, nullptr);
 	quad->Draw(cmdBuffer);
 
 	cmdBuffer.endRendering();
