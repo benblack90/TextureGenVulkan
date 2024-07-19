@@ -14,17 +14,25 @@ namespace NCL::Rendering::Vulkan {
 
 	class ComputeExample : public VulkanTutorial {
 	public:
+		enum KeyComms 
+		{
+			NEW,
+			NEXT,
+			PREV
+		};
+
 		ComputeExample(Window& window);
+		void Update(float dt) override;
 		~ComputeExample() {}
 		
 	protected:
-		void RenderFrame(float dt) override;
+		void RenderFrame(float dt) override ;
 		void InitConstantVectors();
 		void InitTestConstVectors();
+		void CreateNewPlanetDescrSets();
 
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
-		UniqueVulkanTexture computeTexture;
 		UniqueVulkanMesh quad;
 		VulkanBuffer constVectorBuffer;
 
@@ -34,7 +42,9 @@ namespace NCL::Rendering::Vulkan {
 		int perms[NUM_PERMUTATIONS * 2];
 		int currentTex;
 		std::vector<vk::UniqueDescriptorSet> planetDescr;
-		vk::UniqueDescriptorSet vertFragDescr;
+		std::vector<vk::UniqueDescriptorSet> vertFragDescr;
 		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
+
+		std::vector<KeyComms> pendCommands;
 	};
 }

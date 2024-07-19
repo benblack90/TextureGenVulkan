@@ -90,7 +90,7 @@ void main()
     float freq = 0.01;
     coordF *= freq;
 	ivec2 size = imageSize(image);
-    float warpFactor = 0.85;
+    float warpFactor = 1.25;
     float warping = fracBrownMotion(coordF * warpFactor, 6);
     float warpingOff = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.03,coordF.y * warpFactor), 4);
     float warpingOff2 = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.1,coordF.y * warpFactor), 4);
