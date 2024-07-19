@@ -125,10 +125,14 @@ void ComputeExample::RenderFrame(float dt) {
 	vk::CommandBuffer cmdBuffer = frameState.cmdBuffer;
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
 	Vector3 positionUniform = { runTime, 0.0f, 0.0f };
-	cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
-	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[currentTex], 0, nullptr);
 
-	cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
+	for (int i = 0; i < planetDescr.size(); i++)
+	{
+		cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
+		cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[i], 0, nullptr);
+		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
+	}
+	
 
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eComputeShader,
