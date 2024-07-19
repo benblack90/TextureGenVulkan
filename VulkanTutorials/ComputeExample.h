@@ -10,7 +10,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 
 namespace NCL::Rendering::Vulkan {
 
-	constexpr int NUM_PERMUTATIONS = 512;
+	constexpr int NUM_PERMUTATIONS = 256;
 
 	class ComputeExample : public VulkanTutorial {
 	public:
