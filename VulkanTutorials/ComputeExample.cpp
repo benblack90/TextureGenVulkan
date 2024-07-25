@@ -79,8 +79,8 @@ void ComputeExample::CreateNewPlanetDescrSets()
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
-	//InitTestConstVectors();
-	InitConstantVectors();
+	InitTestConstVectors();
+	//InitConstantVectors();
 	constVectorBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()

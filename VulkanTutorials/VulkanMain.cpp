@@ -49,13 +49,13 @@ using namespace Rendering;
 using namespace Vulkan;
 
 int main() {
-	Window* w = Window::CreateGameWindow("Welcome to Vulkan!", 1120, 768);
+	Window* w = Window::CreateGameWindow("Welcome to Vulkan!", 1440, 1080);
 
 	if (!w->HasInitialised()) {
 		return -1;
 	}
 
-	w->SetConsolePosition(200, 200);
+	w->SetConsolePosition(0, 0);
 
 	/*
 	API Functionality Tutorials
