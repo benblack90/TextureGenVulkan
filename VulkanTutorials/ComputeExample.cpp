@@ -8,6 +8,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 #include "ComputeExample.h"
 
 #include <random>
+#include <thread>
 
 using namespace NCL;
 using namespace Rendering;
@@ -15,7 +16,7 @@ using namespace Vulkan;
 
 
 ComputeExample::ComputeExample(Window& window)
-	: VulkanTutorial(window)
+	: VulkanTutorial(window), seed{time(0)}, currentTex{0}
 {
 	VulkanInitialisation vkInit = DefaultInitialisation();
 	vkInit.autoBeginDynamicRendering = false;
@@ -28,9 +29,11 @@ ComputeExample::ComputeExample(Window& window)
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
+	for (int i = 0; i < MAX_PLANETS; i++)
+	{
+		CreateNewPlanetDescrSets();
+	}
 	
-	currentTex = 0;
-	CreateNewPlanetDescrSets();
 
 	//build the compute shader, and attach the compute image descriptor to the pipeline
 	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "BasicCompute.comp.spv"));
@@ -60,12 +63,6 @@ void ComputeExample::Update(float dt)
 
 	VulkanTutorial::Update(dt);
 
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::N))
-	{		
-		CreateNewPlanetDescrSets();
-		currentTex++;
-	}
-
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::RIGHT))
 	{
 		currentTex = (currentTex < planetDescr.size() - 1) ? currentTex + 1 : currentTex;
@@ -84,7 +81,6 @@ void ComputeExample::CreateNewPlanetDescrSets()
 
 	//InitTestConstVectors();
 	InitConstantVectors();
-
 	constVectorBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()
@@ -92,7 +88,7 @@ void ComputeExample::CreateNewPlanetDescrSets()
 		.Build(sizeof(int) * NUM_PERMUTATIONS * 2, "Constant Vector Buffer");
 
 	constVectorBuffer.CopyData(perms, sizeof(int) * NUM_PERMUTATIONS * 2);
-
+	
 	//create descriptor set and descriptor set layout for the compute image
 	imageDescrLayout[0] = DescriptorSetLayoutBuilder(device)
 		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eCompute)
@@ -101,7 +97,6 @@ void ComputeExample::CreateNewPlanetDescrSets()
 	imageDescrLayout[1] = DescriptorSetLayoutBuilder(device)
 		.WithImageSamplers(1, 1, vk::ShaderStageFlagBits::eFragment)
 		.Build("Raster version");
-
 	planetDescr.push_back(CreateDescriptorSet(device, pool, *imageDescrLayout[0]));
 	vertFragDescr.push_back(CreateDescriptorSet(device, pool, *imageDescrLayout[1]));
 
@@ -126,7 +121,7 @@ void ComputeExample::RenderFrame(float dt) {
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
 	Vector3 positionUniform = { runTime, 0.0f, 0.0f };
 
-	for (int i = 0; i < planetDescr.size(); i++)
+	for (int i = 0; i < currentTex + 1; i++)
 	{
 		cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
 		cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[i], 0, nullptr);
@@ -157,7 +152,7 @@ void ComputeExample::RenderFrame(float dt) {
 
 void ComputeExample::InitConstantVectors()
 {
-	srand(time(0));
+	srand(seed++);
 	for (int i = 0; i < NUM_PERMUTATIONS; i++)
 	{
 		perms[i] = i;

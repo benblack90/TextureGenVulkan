@@ -11,6 +11,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 namespace NCL::Rendering::Vulkan {
 
 	constexpr int NUM_PERMUTATIONS = 256;
+	constexpr int MAX_PLANETS = 10;
 
 	class ComputeExample : public VulkanTutorial {
 	public:
@@ -36,10 +37,12 @@ namespace NCL::Rendering::Vulkan {
 		UniqueVulkanMesh quad;
 		VulkanBuffer constVectorBuffer;
 
+
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
 
 		int perms[NUM_PERMUTATIONS * 2];
+		time_t seed;
 		int currentTex;
 		std::vector<vk::UniqueDescriptorSet> planetDescr;
 		std::vector<vk::UniqueDescriptorSet> vertFragDescr;
