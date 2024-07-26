@@ -15,13 +15,6 @@ namespace NCL::Rendering::Vulkan {
 
 	class ComputeExample : public VulkanTutorial {
 	public:
-		enum KeyComms 
-		{
-			NEW,
-			NEXT,
-			PREV
-		};
-
 		ComputeExample(Window& window);
 		void Update(float dt) override;
 		~ComputeExample() {}
@@ -47,7 +40,5 @@ namespace NCL::Rendering::Vulkan {
 		std::vector<vk::UniqueDescriptorSet> planetDescr;
 		std::vector<vk::UniqueDescriptorSet> vertFragDescr;
 		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
-
-		std::vector<KeyComms> pendCommands;
 	};
 }

@@ -59,8 +59,6 @@ ComputeExample::ComputeExample(Window& window)
 void ComputeExample::Update(float dt)
 {
 
-	pendCommands.clear();
-
 	VulkanTutorial::Update(dt);
 
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::RIGHT))
@@ -79,8 +77,8 @@ void ComputeExample::CreateNewPlanetDescrSets()
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
-	InitTestConstVectors();
-	//InitConstantVectors();
+	//InitTestConstVectors();
+	InitConstantVectors();
 	constVectorBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()
