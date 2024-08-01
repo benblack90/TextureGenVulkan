@@ -23,13 +23,13 @@ namespace NCL::Rendering::Vulkan {
 		void RenderFrame(float dt) override ;
 		void InitConstantVectors();
 		void InitTestConstVectors();
-		void CreateNewPlanetDescrSets();
+		void CreateNewPlanetDescrSets(int iteration);
 
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
 		UniqueVulkanMesh quad;
 		VulkanBuffer constVectorBuffer;
-
+		UniqueVulkanTexture computeTextures[MAX_PLANETS];
 
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;

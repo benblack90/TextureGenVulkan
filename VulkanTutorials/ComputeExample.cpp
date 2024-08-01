@@ -31,7 +31,7 @@ ComputeExample::ComputeExample(Window& window)
 
 	for (int i = 0; i < MAX_PLANETS; i++)
 	{
-		CreateNewPlanetDescrSets();
+		CreateNewPlanetDescrSets(i);
 	}
 	
 
@@ -72,7 +72,7 @@ void ComputeExample::Update(float dt)
 	}
 }
 
-void ComputeExample::CreateNewPlanetDescrSets()
+void ComputeExample::CreateNewPlanetDescrSets(int iteration)
 {
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
@@ -107,10 +107,12 @@ void ComputeExample::CreateNewPlanetDescrSets()
 		.WithUsages(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled)
 		.WithLayout(vk::ImageLayout::eGeneral)
 		.WithFormat(vk::Format::eB8G8R8A8Unorm);
-	UniqueVulkanTexture computeTexture = builder.Build("compute RW texture");
-	WriteStorageImageDescriptor(device, *planetDescr.back(), 0, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
-	WriteBufferDescriptor(device, *planetDescr.back(), 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
-	WriteImageDescriptor(device, *vertFragDescr.back(), 1, *computeTexture, *defaultSampler, vk::ImageLayout::eGeneral);
+
+		computeTextures[iteration] = builder.Build("compute RW texture");
+		WriteStorageImageDescriptor(device, *planetDescr.back(), 0, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
+		WriteBufferDescriptor(device, *planetDescr.back(), 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
+		WriteImageDescriptor(device, *vertFragDescr.back(), 1, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
+	
 }
 
 void ComputeExample::RenderFrame(float dt) {
