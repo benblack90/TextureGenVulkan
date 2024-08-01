@@ -118,10 +118,6 @@ void ComputeExample::RenderFrame(float dt) {
 	vk::Device device = renderer->GetDevice();
 	vk::CommandBuffer cmdBuffer = frameState.cmdBuffer;
 	
-	vk::FenceCreateInfo fInfo{};
-	fInfo.flags = vk::FenceCreateFlagBits::eSignaled;
-	vk::Fence computeFence = device.createFence(fInfo);
-	
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
 	Vector3 positionUniform = { runTime, 0.0f, 0.0f };
 
@@ -129,11 +125,8 @@ void ComputeExample::RenderFrame(float dt) {
 	{
 		cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
 		cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[i], 0, nullptr);
-		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
-		vk::Result res = device.waitForFences(1, &computeFence, true, 999999999);
-		device.resetFences(1, &computeFence);
+		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);	
 	}
-	device.destroyFence(computeFence);
 
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eComputeShader,
