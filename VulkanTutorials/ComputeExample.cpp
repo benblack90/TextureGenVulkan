@@ -16,8 +16,10 @@ using namespace Vulkan;
 
 
 ComputeExample::ComputeExample(Window& window)
-	: VulkanTutorial(window), seed{time(0)}, currentTex{0}
+	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }
 {
+
+
 	VulkanInitialisation vkInit = DefaultInitialisation();
 	vkInit.autoBeginDynamicRendering = false;
 
@@ -29,11 +31,19 @@ ComputeExample::ComputeExample(Window& window)
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
 
+	// Create the query pool object used to get the GPU time stamps
+	vk::QueryPoolCreateInfo qpInfo{};
+	qpInfo.sType = vk::StructureType::eQueryPoolCreateInfo;	
+	qpInfo.queryType = vk::QueryType::eTimestamp;
+	qpInfo.queryCount = 3;
+	device.createQueryPool(&qpInfo,nullptr, &timeStampQP);
+
+
 	for (int i = 0; i < MAX_PLANETS; i++)
 	{
 		CreateNewPlanetDescrSets(i);
 	}
-	
+
 
 	//build the compute shader, and attach the compute image descriptor to the pipeline
 	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "BasicCompute.comp.spv"));
@@ -83,10 +93,10 @@ void ComputeExample::CreateNewPlanetDescrSets(int iteration)
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()
 		.WithPersistentMapping()
-		.Build(sizeof(int) * NUM_PERMUTATIONS * 2, "Constant Vector Buffer");
+		.Build(sizeof(Vector4) * NUM_PERMUTATIONS * 2, "Constant Vector Buffer");
 
-	constVectorBuffer.CopyData(perms, sizeof(int) * NUM_PERMUTATIONS * 2);
-	
+	constVectorBuffer.CopyData(perms, sizeof(Vector4) * NUM_PERMUTATIONS * 2);
+
 	//create descriptor set and descriptor set layout for the compute image
 	imageDescrLayout[0] = DescriptorSetLayoutBuilder(device)
 		.WithStorageImages(0, 1, vk::ShaderStageFlagBits::eCompute)
@@ -108,18 +118,20 @@ void ComputeExample::CreateNewPlanetDescrSets(int iteration)
 		.WithLayout(vk::ImageLayout::eGeneral)
 		.WithFormat(vk::Format::eB8G8R8A8Unorm);
 
-		computeTextures[iteration] = builder.Build("compute RW texture");
-		WriteStorageImageDescriptor(device, *planetDescr.back(), 0, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
-		WriteBufferDescriptor(device, *planetDescr.back(), 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
-		WriteImageDescriptor(device, *vertFragDescr.back(), 1, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
-	
+	computeTextures[iteration] = builder.Build("compute RW texture");
+	WriteStorageImageDescriptor(device, *planetDescr.back(), 0, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
+	WriteBufferDescriptor(device, *planetDescr.back(), 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
+	WriteImageDescriptor(device, *vertFragDescr.back(), 1, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
+
 }
 
 void ComputeExample::RenderFrame(float dt) {
 	FrameState const& frameState = renderer->GetFrameState();
 	vk::Device device = renderer->GetDevice();
 	vk::CommandBuffer cmdBuffer = frameState.cmdBuffer;
-	
+	cmdBuffer.resetQueryPool(timeStampQP,0,3);
+	cmdBuffer.writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, timeStampQP, 0);
+
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, computePipeline);
 	Vector3 positionUniform = { runTime, 0.0f, 0.0f };
 
@@ -127,9 +139,9 @@ void ComputeExample::RenderFrame(float dt) {
 	{
 		cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
 		cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[i], 0, nullptr);
-		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);	
+		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
 	}
-
+	cmdBuffer.writeTimestamp(vk::PipelineStageFlagBits::eVertexInput, timeStampQP, 1);
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eComputeShader,
 		vk::PipelineStageFlagBits::eFragmentShader,
@@ -146,8 +158,27 @@ void ComputeExample::RenderFrame(float dt) {
 	cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, basicPipeline);
 	cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *basicPipeline.layout, 0, 1, &*vertFragDescr[currentTex], 0, nullptr);
 	quad->Draw(cmdBuffer);
+	cmdBuffer.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, timeStampQP, 2);
 
+	device.getQueryPoolResults(timeStampQP,
+		0,
+		3,
+		3 * sizeof(uint64_t),
+		timeStamps,
+		sizeof(uint64_t),
+		vk::QueryResultFlagBits::e64
+	);
 	cmdBuffer.endRendering();
+
+	VkPhysicalDeviceLimits deviceLimits = renderer->GetPhysicalDevice().getProperties().limits;	
+	float delta1Ms = float(timeStamps[1] - timeStamps[0]) * deviceLimits.timestampPeriod / 1000000.0f;
+	float delta2Ms = float(timeStamps[2] - timeStamps[1]) * deviceLimits.timestampPeriod / 1000000.0f;
+
+	for (int i = 0; i < 3; i++)
+	{
+		std::cout << "Compute: " << delta1Ms << '\n'
+			<< "Render: " << delta2Ms << '\n';
+	}	
 }
 
 void ComputeExample::InitConstantVectors()
@@ -155,16 +186,51 @@ void ComputeExample::InitConstantVectors()
 	srand(seed++);
 	for (int i = 0; i < NUM_PERMUTATIONS; i++)
 	{
-		perms[i] = i;
+		perms[i].z = i;
+		HashConstVecs(i);
 	}
 	for (int j = NUM_PERMUTATIONS - 1; j > 0; j--) {
 		int index = std::round(rand() % (j));
-		int temp = perms[j];
+		Vector4 temp = perms[j];
 		perms[j] = perms[index];
 		perms[index] = temp;
 
 		perms[j + NUM_PERMUTATIONS] = perms[j];
 		perms[index + NUM_PERMUTATIONS] = temp;
+	}
+}
+
+void ComputeExample::HashConstVecs(int x)
+{
+	int hash = x % 6;
+	switch (hash)
+	{
+	case 0:
+		perms[x].x = 0.0f;
+		perms[x].y = 1.4142f;
+		break;
+	case 1:
+		perms[x].x = 0.0f;
+		perms[x].y = -1.1412f;
+		break;
+	case 2:
+		perms[x].x = 0.2455732529f;
+		perms[x].y = 1.392715124f;
+		break;
+	case 3:
+		perms[x].x = -0.2455732529f;
+		perms[x].y = 1.392715124f;
+		break;
+	case 4:
+		perms[x].x = 0.2455732529f;
+		perms[x].y = -1.392715124f;
+		break;
+	case 5:
+		perms[x].x = -0.2455732529f;
+		perms[x].y = -1.392715124f;
+		break;
+	default:
+		break;
 	}
 }
 
@@ -201,7 +267,11 @@ void ComputeExample::InitTestConstVectors()
 		183, 39, 14, 139, 53, 232, 72, 216, 35, 208, 31, 47, 207, 175, 4
 	};
 
-	memcpy(perms, permCopy, 512 * sizeof(int));
+	for (int i = 0; i < NUM_PERMUTATIONS; i++)
+	{
+		perms[i].z = i;
+		HashConstVecs(i);
+	}
 }
 
 

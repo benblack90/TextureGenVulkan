@@ -201,6 +201,7 @@ VulkanInitialisation VulkanTutorial::DefaultInitialisation() {
 	vkInit.instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	vkInit.instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
+
 #ifdef WIN32
 	vkInit.instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
@@ -218,10 +219,13 @@ VulkanInitialisation VulkanTutorial::DefaultInitialisation() {
 	static vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRendering;
 	dynamicRendering.dynamicRendering = true;
 
+	static vk::PhysicalDeviceHostQueryResetFeaturesEXT hostQueryFeatures;
+	hostQueryFeatures.hostQueryReset = true;
 
 	vkInit.features.push_back((void*)&robustness);
 	vkInit.features.push_back((void*)&syncFeatures);
 	vkInit.features.push_back((void*)&dynamicRendering);
+	vkInit.features.push_back((void*)&hostQueryFeatures);
 
 //#ifdef USE_RAY_TRACING
 //	vkInit.deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
@@ -246,6 +250,7 @@ VulkanInitialisation VulkanTutorial::DefaultInitialisation() {
 //	vkInit.features.push_back((void*)&rayFeatures);
 //	vkInit.features.push_back((void*)&deviceAddressfeature);
 //#endif
+
 
 	return vkInit;
 }

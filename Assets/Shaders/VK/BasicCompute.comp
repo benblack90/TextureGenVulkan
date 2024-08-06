@@ -16,7 +16,7 @@ const float PI = 3.14159265359;
 
 layout(set = 0, binding = 2) buffer permutations
 {
-    int[512] perms;
+    vec4[512] perms;
 };
 
 vec2 GetConstVec(int x)
@@ -51,15 +51,15 @@ float Perlin2d(float xx, float yy)
     vec2 topLeft = vec2(freqX, freqY - 1.0f);
     vec2 topRight = vec2(freqX - 1.0f, freqY - 1.0f);
 
-    int cvBottomLeft = perms[perms[x] + y];
-    int cvBottomRight = perms[perms[x + 1] + y];
-    int cvTopLeft = perms[perms[x] + y + 1];
-    int cvTopRight = perms[perms[x + 1] + y + 1];
+    vec4 cvBottomLeft = perms[int(perms[x].z) + y];
+    vec4 cvBottomRight = perms[int(perms[x + 1].z) + y];
+    vec4 cvTopLeft = perms[int(perms[x].z) + y + 1];
+    vec4 cvTopRight = perms[int(perms[x + 1].z) + y + 1];
 
-    float dotBotL = dot(bottomLeft, GetConstVec(cvBottomLeft));
-    float dotBotR = dot(bottomRight, GetConstVec(cvBottomRight));
-    float dotTopL = dot(topLeft, GetConstVec(cvTopLeft));
-    float dotTopR = dot(topRight, GetConstVec(cvTopRight));
+    float dotBotL = dot(bottomLeft, vec2(cvBottomLeft));
+    float dotBotR = dot(bottomRight, vec2(cvBottomRight));
+    float dotTopL = dot(topLeft, vec2(cvTopLeft));
+    float dotTopR = dot(topRight, vec2(cvTopRight));
         
     float u = Ease(freqX);
     float v = Ease(freqY);
