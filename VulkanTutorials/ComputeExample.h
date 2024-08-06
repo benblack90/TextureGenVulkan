@@ -25,6 +25,7 @@ namespace NCL::Rendering::Vulkan {
 		void HashConstVecs(int x);
 		void InitTestConstVectors();
 		void CreateNewPlanetDescrSets(int iteration);
+		void PrintAverageTimestamps();
 
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
@@ -45,5 +46,8 @@ namespace NCL::Rendering::Vulkan {
 		//structures required for timestamps
 		vk::QueryPool timeStampQP = VK_NULL_HANDLE;
 		uint64_t timeStamps[3];
+		int frameNum;
+		float msToCompute;
+		float msToEnd;
 	};
 }

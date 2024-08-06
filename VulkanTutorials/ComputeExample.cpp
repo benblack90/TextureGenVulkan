@@ -16,7 +16,7 @@ using namespace Vulkan;
 
 
 ComputeExample::ComputeExample(Window& window)
-	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }
+	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }, frameNum{0}, msToCompute {0.0f}, msToEnd {0.0f}
 {
 
 
@@ -141,7 +141,7 @@ void ComputeExample::RenderFrame(float dt) {
 		cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[i], 0, nullptr);
 		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
 	}
-	cmdBuffer.writeTimestamp(vk::PipelineStageFlagBits::eVertexInput, timeStampQP, 1);
+	cmdBuffer.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, timeStampQP, 1);
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eComputeShader,
 		vk::PipelineStageFlagBits::eFragmentShader,
@@ -170,15 +170,27 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 	cmdBuffer.endRendering();
 
-	VkPhysicalDeviceLimits deviceLimits = renderer->GetPhysicalDevice().getProperties().limits;	
-	float delta1Ms = float(timeStamps[1] - timeStamps[0]) * deviceLimits.timestampPeriod / 1000000.0f;
-	float delta2Ms = float(timeStamps[2] - timeStamps[1]) * deviceLimits.timestampPeriod / 1000000.0f;
+	PrintAverageTimestamps();
+}
 
-	for (int i = 0; i < 3; i++)
+void ComputeExample::PrintAverageTimestamps()
+{
+	
+	frameNum++;
+	if (frameNum > 1000)
 	{
-		std::cout << "Compute: " << delta1Ms << '\n'
-			<< "Render: " << delta2Ms << '\n';
-	}	
+		frameNum = 0;
+		std::cout <<  currentTex << ','
+			<< msToCompute / 1000.0f << ','
+			<< msToEnd / 1000.0f << '\n';
+
+		msToCompute = 0.0f;
+		msToEnd = 0.0f;
+		currentTex = (currentTex < planetDescr.size() - 1) ? currentTex + 1 : currentTex;
+	}
+	VkPhysicalDeviceLimits deviceLimits = renderer->GetPhysicalDevice().getProperties().limits;
+	msToCompute += float(timeStamps[1] - timeStamps[0]) * deviceLimits.timestampPeriod / 1000000.0f;
+	msToEnd += float(timeStamps[2] - timeStamps[1]) * deviceLimits.timestampPeriod / 1000000.0f;
 }
 
 void ComputeExample::InitConstantVectors()
