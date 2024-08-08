@@ -16,7 +16,7 @@ const float PI = 3.14159265359;
 
 layout(set = 0, binding = 2) buffer permutations
 {
-    vec4[512] perms;
+    vec4[513] perms;
 };
 
 vec2 GetConstVec(int x)
@@ -90,13 +90,13 @@ void main()
     float freq = 0.01;
     coordF *= freq;
 	ivec2 size = imageSize(image);
-    float warpFactor = 1.0025;
+    float warpFactor = 1.0f + perms[512].z;
     float warping = fracBrownMotion(coordF * warpFactor, 5);
-    float warpingOff = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.03,coordF.y * warpFactor), 4);
-    float warpingOff2 = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.1,coordF.y * warpFactor), 4);
-    float colour1 = fracBrownMotion(vec2(warping, coordF.y + warping),4);
+    float warpingOff = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.1,coordF.y * warpFactor), 5);
+    float warpingOff2 = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.15,coordF.y * warpFactor), 5);
+    float colour1 = fracBrownMotion(vec2(warpingOff, coordF.y + warping),4);
     float colour2 = fracBrownMotion(vec2(warpingOff2, abs(coordF.y - warping)),4);
-    float bassDetail = fracBrownMotion(vec2(warpingOff, coordF.y + warping),4);
+    float bassDetail = fracBrownMotion(vec2(warping, abs(coordF.y + warping * perms[512].z)),4);
     vec3 bass = vec3(0.369, 0.082, 0.0082);
     vec3 superBass = bass * bass;
     vec3 yel = vec3(0.741, 0.643, 0.435);
@@ -104,9 +104,9 @@ void main()
    
    bass = mix(superBass, bass, smoothstep(0.0,2.0,bassDetail));
    vec3  col = mix(orng, bass, smoothstep(0.0,1.0,colour1));  
-   col = mix(col, yel, smoothstep(0.3,1.0,colour2));
-   col = mix(superBass, col, smoothstep(0.0,0.35,bassDetail));
-   
+   col = mix(col, yel, smoothstep(0.45,1.0,colour2));
+   //col = mix(superBass, col, smoothstep(perms[512].x, perms[512].y,bassDetail));
+   col = mix(superBass, col, smoothstep(0.0, perms[512].y,bassDetail));
    
    
    vec4 colour = vec4(col,1);

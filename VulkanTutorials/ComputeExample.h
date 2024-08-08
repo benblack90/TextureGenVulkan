@@ -22,10 +22,12 @@ namespace NCL::Rendering::Vulkan {
 	protected:
 		void RenderFrame(float dt) override ;
 		void InitConstantVectors();
+		void InitColourVars();
 		void HashConstVecs(int x);
 		void InitTestConstVectors();
 		void CreateNewPlanetDescrSets(int iteration);
 		void PrintAverageTimestamps();
+		
 
 		UniqueVulkanShader	rasterShader;
 		UniqueVulkanCompute	computeShader;
@@ -36,7 +38,7 @@ namespace NCL::Rendering::Vulkan {
 		VulkanPipeline	basicPipeline;
 		VulkanPipeline	computePipeline;
 
-		Vector4 perms[NUM_PERMUTATIONS * 2];
+		Vector4 perms[NUM_PERMUTATIONS * 2 + 1];
 		time_t seed;
 		int currentTex;
 		std::vector<vk::UniqueDescriptorSet> planetDescr;

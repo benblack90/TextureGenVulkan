@@ -89,13 +89,14 @@ void ComputeExample::CreateNewPlanetDescrSets(int iteration)
 
 	//InitTestConstVectors();
 	InitConstantVectors();
+	InitColourVars();
 	constVectorBuffer = BufferBuilder(renderer->GetDevice(), renderer->GetMemoryAllocator())
 		.WithBufferUsage(vk::BufferUsageFlagBits::eStorageBuffer)
 		.WithHostVisibility()
 		.WithPersistentMapping()
-		.Build(sizeof(Vector4) * NUM_PERMUTATIONS * 2, "Constant Vector Buffer");
+		.Build(sizeof(Vector4) * (NUM_PERMUTATIONS * 2 + 1), "Constant Vector Buffer");
 
-	constVectorBuffer.CopyData(perms, sizeof(Vector4) * NUM_PERMUTATIONS * 2);
+	constVectorBuffer.CopyData(perms, sizeof(Vector4) * (NUM_PERMUTATIONS * 2 + 1));
 
 	//create descriptor set and descriptor set layout for the compute image
 	imageDescrLayout[0] = DescriptorSetLayoutBuilder(device)
@@ -123,6 +124,19 @@ void ComputeExample::CreateNewPlanetDescrSets(int iteration)
 	WriteBufferDescriptor(device, *planetDescr.back(), 2, vk::DescriptorType::eStorageBuffer, constVectorBuffer);
 	WriteImageDescriptor(device, *vertFragDescr.back(), 1, *computeTextures[iteration], *defaultSampler, vk::ImageLayout::eGeneral);
 
+}
+
+void ComputeExample::InitColourVars()
+{
+	Vector4 vars;
+	float x = std::round(((float)rand() / (RAND_MAX)) - 0.5f);
+	//whether to add or subtract for bass warp
+	vars.x = x / abs(x);
+	//upper limit for bass colour smoothstep
+	vars.y = 0.5f + ((float)rand() / (RAND_MAX * 2));
+	//adjustment for frequency
+	vars.z = ((float)rand() / (RAND_MAX)) - 0.5f;
+	perms[NUM_PERMUTATIONS * 2] = vars;
 }
 
 void ComputeExample::RenderFrame(float dt) {
@@ -170,7 +184,7 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 	cmdBuffer.endRendering();
 
-	PrintAverageTimestamps();
+	//PrintAverageTimestamps();
 }
 
 void ComputeExample::PrintAverageTimestamps()
@@ -214,6 +228,7 @@ void ComputeExample::InitConstantVectors()
 
 void ComputeExample::HashConstVecs(int x)
 {
+	
 	int hash = x % 6;
 	switch (hash)
 	{
@@ -244,6 +259,9 @@ void ComputeExample::HashConstVecs(int x)
 	default:
 		break;
 	}
+	
+
+
 }
 
 //for testing purposes: sends across the same set of numbers to derive the constant vectors every time, so we can see what different effects do
@@ -281,7 +299,7 @@ void ComputeExample::InitTestConstVectors()
 
 	for (int i = 0; i < NUM_PERMUTATIONS; i++)
 	{
-		perms[i].z = i;
+		perms[i].z = permCopy[i];
 		HashConstVecs(i);
 	}
 }
