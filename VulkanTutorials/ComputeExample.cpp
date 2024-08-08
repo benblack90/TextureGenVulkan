@@ -136,6 +136,7 @@ void ComputeExample::InitColourVars()
 	vars.y = 0.5f + ((float)rand() / (RAND_MAX * 2));
 	//adjustment for frequency
 	vars.z = ((float)rand() / (RAND_MAX)) - 0.5f;
+
 	perms[NUM_PERMUTATIONS * 2] = vars;
 }
 
@@ -184,7 +185,7 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 	cmdBuffer.endRendering();
 
-	//PrintAverageTimestamps();
+	PrintAverageTimestamps();
 }
 
 void ComputeExample::PrintAverageTimestamps()
@@ -194,7 +195,7 @@ void ComputeExample::PrintAverageTimestamps()
 	if (frameNum > 1000)
 	{
 		frameNum = 0;
-		std::cout <<  currentTex << ','
+		std::cout <<  currentTex + 1 << ','
 			<< msToCompute / 1000.0f << ','
 			<< msToEnd / 1000.0f << '\n';
 

@@ -38,6 +38,7 @@ float Ease(float val)
     return val * val * val * (val * (val * 6.0f - 15.0f) + 10.0f); 
 }
 
+
 float Perlin2d(float xx, float yy)
 {
     
@@ -66,6 +67,7 @@ float Perlin2d(float xx, float yy)
     return (mix(    mix(dotBotL, dotTopL, v),  mix(dotBotR, dotTopR, v), u));
 
 }
+
 
 float fracBrownMotion(vec2 coords, int octaves)
 {
@@ -105,7 +107,6 @@ void main()
    bass = mix(superBass, bass, smoothstep(0.0,2.0,bassDetail));
    vec3  col = mix(orng, bass, smoothstep(0.0,1.0,colour1));  
    col = mix(col, yel, smoothstep(0.45,1.0,colour2));
-   //col = mix(superBass, col, smoothstep(perms[512].x, perms[512].y,bassDetail));
    col = mix(superBass, col, smoothstep(0.0, perms[512].y,bassDetail));
    
    
