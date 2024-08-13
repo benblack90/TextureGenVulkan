@@ -7,9 +7,10 @@ layout (local_size_x = 16, local_size_y = 16) in;
 //descriptor bindings for the pipeline
 layout(rgba8,set = 0, binding = 0) uniform image2D image;
 
-layout(push_constant) uniform sinTime
+layout(push_constant) uniform pConsts
 {
 	vec3 positionOffset;
+    int[6] LoD;
 };
 
 const float PI = 3.14159265359;
@@ -38,7 +39,7 @@ float Ease(float val)
     return val * val * val * (val * (val * 6.0f - 15.0f) + 10.0f); 
 }
 
-
+//Calculates Perlin using pre-created const vecs sent over in uniform
 float Perlin2d(float xx, float yy)
 {
     
@@ -61,6 +62,36 @@ float Perlin2d(float xx, float yy)
     float dotBotR = dot(bottomRight, vec2(cvBottomRight));
     float dotTopL = dot(topLeft, vec2(cvTopLeft));
     float dotTopR = dot(topRight, vec2(cvTopRight));
+        
+    float u = Ease(freqX);
+    float v = Ease(freqY);
+    return (mix(    mix(dotBotL, dotTopL, v),  mix(dotBotR, dotTopR, v), u));
+
+}
+
+//calculates perlin by hashing permuation number GPU side into a constant vector
+float Perlin2d2(float xx, float yy)
+{
+    
+    int x = int(xx);
+    int y = int(yy);
+    float freqX = xx - int(xx);
+    float freqY = yy - int(yy);  
+
+    vec2 bottomLeft = vec2(freqX, freqY);
+    vec2 bottomRight = vec2(freqX - 1.0f, freqY);
+    vec2 topLeft = vec2(freqX, freqY - 1.0f);
+    vec2 topRight = vec2(freqX - 1.0f, freqY - 1.0f);
+
+    vec4 cvBottomLeft = perms[int(perms[x].z) + y];
+    vec4 cvBottomRight = perms[int(perms[x + 1].z) + y];
+    vec4 cvTopLeft = perms[int(perms[x].z) + y + 1];
+    vec4 cvTopRight = perms[int(perms[x + 1].z) + y + 1];
+
+    float dotBotL = dot(bottomLeft, GetConstVec(int(cvBottomLeft.z)));
+    float dotBotR = dot(bottomRight, GetConstVec(int(cvBottomRight.z)));
+    float dotTopL = dot(topLeft, GetConstVec(int(cvTopLeft.z)));
+    float dotTopR = dot(topRight, GetConstVec(int(cvTopRight.z)));
         
     float u = Ease(freqX);
     float v = Ease(freqY);
@@ -93,12 +124,12 @@ void main()
     coordF *= freq;
 	ivec2 size = imageSize(image);
     float warpFactor = 1.0f + perms[512].z;
-    float warping = fracBrownMotion(coordF * warpFactor, 5);
-    float warpingOff = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.1,coordF.y * warpFactor), 5);
-    float warpingOff2 = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.15,coordF.y * warpFactor), 5);
-    float colour1 = fracBrownMotion(vec2(warpingOff, coordF.y + warping),4);
-    float colour2 = fracBrownMotion(vec2(warpingOff2, abs(coordF.y - warping)),4);
-    float bassDetail = fracBrownMotion(vec2(warping, abs(coordF.y + warping * perms[512].z)),4);
+    float warping = fracBrownMotion(coordF * warpFactor, LoD[0]);
+    float warpingOff = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.1,coordF.y * warpFactor), LoD[1]);
+    float warpingOff2 = fracBrownMotion(vec2(coordF.x * warpFactor + positionOffset.x * 0.15,coordF.y * warpFactor), LoD[2]);
+    float colour1 = fracBrownMotion(vec2(warpingOff, coordF.y + warping),LoD[3]);
+    float colour2 = fracBrownMotion(vec2(warpingOff2, abs(coordF.y - warping)),LoD[4]);
+    float bassDetail = fracBrownMotion(vec2(warping, abs(coordF.y + warping * perms[512].z)),LoD[5]);
     vec3 bass = vec3(0.369, 0.082, 0.0082);
     vec3 superBass = bass * bass;
     vec3 yel = vec3(0.741, 0.643, 0.435);

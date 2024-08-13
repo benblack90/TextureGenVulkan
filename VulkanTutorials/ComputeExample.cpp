@@ -16,17 +16,15 @@ using namespace Vulkan;
 
 
 ComputeExample::ComputeExample(Window& window)
-	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }, frameNum{0}, msToCompute {0.0f}, msToEnd {0.0f}
+	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }, frameNum{0}, msToCompute {0.0f}, msToEnd {0.0f}, LoDIndex{0}
 {
-
-
 	VulkanInitialisation vkInit = DefaultInitialisation();
 	vkInit.autoBeginDynamicRendering = false;
 
 	renderer = new VulkanRenderer(window, vkInit);
 	InitTutorialObjects();
 	quad = GenerateQuad();
-
+	InitLoDs();
 	FrameState const& state = renderer->GetFrameState();
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
@@ -80,6 +78,23 @@ void ComputeExample::Update(float dt)
 	{
 		currentTex = (currentTex > 0) ? currentTex - 1 : currentTex;
 	}
+
+	if (Window::GetKeyboard()->KeyPressed(KeyCodes::MINUS))
+	{
+		LoDIndex = (LoDIndex < 3) ? LoDIndex + 1 : 0;
+	}
+
+	if (Window::GetKeyboard()->KeyPressed(KeyCodes::PLUS))
+	{
+		LoDIndex = (LoDIndex > 0) ? LoDIndex - 1 : 0;
+	}
+}
+
+void ComputeExample::InitLoDs()
+{
+	LoDs.push_back({ 5,5,5,4,4,4 });
+	LoDs.push_back({ 3,3,3,2,2,2 });
+	LoDs.push_back({ 1,1,1,1,1,1 });
 }
 
 void ComputeExample::CreateNewPlanetDescrSets(int iteration)
@@ -153,6 +168,7 @@ void ComputeExample::RenderFrame(float dt) {
 	for (int i = 0; i < currentTex + 1; i++)
 	{
 		cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(positionUniform), (void*)&positionUniform);
+		cmdBuffer.pushConstants(*computePipeline.layout, vk::ShaderStageFlagBits::eCompute, sizeof(Vector3), sizeof(Vector4) * 2, (void*)&LoDs[LoDIndex]);
 		cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *computePipeline.layout, 0, 1, &*planetDescr[i], 0, nullptr);
 		cmdBuffer.dispatch(std::ceil(hostWindow.GetScreenSize().x / 16.0), std::ceil(hostWindow.GetScreenSize().y / 16.0), 1);
 	}
@@ -185,7 +201,7 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 	cmdBuffer.endRendering();
 
-	PrintAverageTimestamps();
+	//PrintAverageTimestamps();
 }
 
 void ComputeExample::PrintAverageTimestamps()

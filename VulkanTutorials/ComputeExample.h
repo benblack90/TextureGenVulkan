@@ -27,6 +27,7 @@ namespace NCL::Rendering::Vulkan {
 		void InitTestConstVectors();
 		void CreateNewPlanetDescrSets(int iteration);
 		void PrintAverageTimestamps();
+		void InitLoDs();
 		
 
 		UniqueVulkanShader	rasterShader;
@@ -41,6 +42,8 @@ namespace NCL::Rendering::Vulkan {
 		Vector4 perms[NUM_PERMUTATIONS * 2 + 1];
 		time_t seed;
 		int currentTex;
+		int LoDIndex;
+		std::vector<std::array<int, 6>> LoDs;
 		std::vector<vk::UniqueDescriptorSet> planetDescr;
 		std::vector<vk::UniqueDescriptorSet> vertFragDescr;
 		vk::UniqueDescriptorSetLayout	imageDescrLayout[2];
