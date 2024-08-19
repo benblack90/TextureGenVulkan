@@ -13,17 +13,17 @@ namespace NCL::Rendering::Vulkan {
 	constexpr int NUM_PERMUTATIONS = 256;
 	constexpr int MAX_PLANETS = 100;
 
-	class ComputeExample : public VulkanTutorial {
+	class GasGiantTexGen : public VulkanTutorial {
 	public:
-		ComputeExample(Window& window);
+		GasGiantTexGen(Window& window);
 		void Update(float dt) override;
-		~ComputeExample() {}
+		~GasGiantTexGen() {}
 		
 	protected:
 		void RenderFrame(float dt) override ;
 		void InitConstantVectors();
 		void InitColourVars();
-		void HashConstVecs(int x);
+		void HashConstVecs(int x, int ind);
 		void InitTestConstVectors();
 		void CreateNewPlanetDescrSets(int iteration);
 		void PrintAverageTimestamps();
@@ -54,5 +54,6 @@ namespace NCL::Rendering::Vulkan {
 		int frameNum;
 		float msToCompute;
 		float msToEnd;
+		bool timedMode;
 	};
 }

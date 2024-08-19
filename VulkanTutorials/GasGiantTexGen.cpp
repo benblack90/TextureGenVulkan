@@ -5,7 +5,7 @@ Author:Rich Davison
 Contact:richgdavison@gmail.com
 License: MIT (see LICENSE file at the top of the source tree)
 *//////////////////////////////////////////////////////////////////////////////
-#include "ComputeExample.h"
+#include "GasGiantTexGen.h"
 
 #include <random>
 #include <thread>
@@ -15,8 +15,8 @@ using namespace Rendering;
 using namespace Vulkan;
 
 
-ComputeExample::ComputeExample(Window& window)
-	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }, frameNum{0}, msToCompute {0.0f}, msToEnd {0.0f}, LoDIndex{0}
+GasGiantTexGen::GasGiantTexGen(Window& window)
+	: VulkanTutorial(window), seed{ time(0) }, currentTex{ 0 }, frameNum{0}, msToCompute {0.0f}, msToEnd {0.0f}, LoDIndex{0}, timedMode{false}
 {
 	VulkanInitialisation vkInit = DefaultInitialisation();
 	vkInit.autoBeginDynamicRendering = false;
@@ -44,7 +44,7 @@ ComputeExample::ComputeExample(Window& window)
 
 
 	//build the compute shader, and attach the compute image descriptor to the pipeline
-	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "BasicCompute.comp.spv"));
+	computeShader = UniqueVulkanCompute(new VulkanCompute(device, "GasGiantTex.comp.spv"));
 	computePipeline = ComputePipelineBuilder(device)
 		.WithShader(computeShader)
 		.WithDescriptorSetLayout(0, *imageDescrLayout[0])
@@ -64,40 +64,63 @@ ComputeExample::ComputeExample(Window& window)
 		.Build("Raster Pipeline");
 }
 
-void ComputeExample::Update(float dt)
+void GasGiantTexGen::Update(float dt)
 {
 
 	VulkanTutorial::Update(dt);
 
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::RIGHT))
+	if (!timedMode)
 	{
-		currentTex = (currentTex < planetDescr.size() - 1) ? currentTex + 1 : currentTex;
-	}
+		if (Window::GetKeyboard()->KeyPressed(KeyCodes::RIGHT))
+		{
+			currentTex = (currentTex < planetDescr.size() - 1) ? currentTex + 1 : currentTex;
+		}
 
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::LEFT))
-	{
-		currentTex = (currentTex > 0) ? currentTex - 1 : currentTex;
-	}
+		if (Window::GetKeyboard()->KeyPressed(KeyCodes::LEFT))
+		{
+			currentTex = (currentTex > 0) ? currentTex - 1 : currentTex;
+		}
 
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::MINUS))
-	{
-		LoDIndex = (LoDIndex < 3) ? LoDIndex + 1 : 0;
-	}
+		if (Window::GetKeyboard()->KeyPressed(KeyCodes::MINUS))
+		{
+			LoDIndex = (LoDIndex < 3) ? LoDIndex + 1 : 0;
+		}
 
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::PLUS))
+		if (Window::GetKeyboard()->KeyPressed(KeyCodes::PLUS))
+		{
+			LoDIndex = (LoDIndex > 0) ? LoDIndex - 1 : 0;
+		}
+	}
+	
+
+	if (Window::GetKeyboard()->KeyPressed(KeyCodes::T))
 	{
-		LoDIndex = (LoDIndex > 0) ? LoDIndex - 1 : 0;
+		timedMode = !timedMode;
+
+		if (!timedMode)
+		{
+			std::cout << "Timed mode stopped\n";
+		}
+
+		if (timedMode)
+		{
+			currentTex = 0;
+			frameNum = 0;
+			msToCompute = 0.0f;
+			msToEnd = 0.0f;
+			std::cout << "Timed mode begun ... \n";
+		}
 	}
 }
 
-void ComputeExample::InitLoDs()
+void GasGiantTexGen::InitLoDs()
 {
 	LoDs.push_back({ 5,5,5,4,4,4 });
 	LoDs.push_back({ 3,3,3,2,2,2 });
 	LoDs.push_back({ 1,1,1,1,1,1 });
 }
 
-void ComputeExample::CreateNewPlanetDescrSets(int iteration)
+void GasGiantTexGen::CreateNewPlanetDescrSets(int iteration)
 {
 	vk::Device device = renderer->GetDevice();
 	vk::DescriptorPool pool = renderer->GetDescriptorPool();
@@ -141,21 +164,21 @@ void ComputeExample::CreateNewPlanetDescrSets(int iteration)
 
 }
 
-void ComputeExample::InitColourVars()
+void GasGiantTexGen::InitColourVars()
 {
 	Vector4 vars;
-	float x = std::round(((float)rand() / (RAND_MAX)) - 0.5f);
+	float x = ((float)rand() / (RAND_MAX)) - 0.5f;
 	//whether to add or subtract for bass warp
-	vars.x = x / abs(x);
+	vars.x = (x > 0) ? 1 : -1;
 	//upper limit for bass colour smoothstep
-	vars.y = 0.5f + ((float)rand() / (RAND_MAX * 2));
+	vars.y = 0.35 + ((float)rand() / (RAND_MAX) * 0.5);
 	//adjustment for frequency
-	vars.z = ((float)rand() / (RAND_MAX)) - 0.5f;
+	vars.z = ((float)rand() / (RAND_MAX)) - 0.35f;
 
 	perms[NUM_PERMUTATIONS * 2] = vars;
 }
 
-void ComputeExample::RenderFrame(float dt) {
+void GasGiantTexGen::RenderFrame(float dt) {
 	FrameState const& frameState = renderer->GetFrameState();
 	vk::Device device = renderer->GetDevice();
 	vk::CommandBuffer cmdBuffer = frameState.cmdBuffer;
@@ -175,7 +198,7 @@ void ComputeExample::RenderFrame(float dt) {
 	cmdBuffer.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, timeStampQP, 1);
 	cmdBuffer.pipelineBarrier(
 		vk::PipelineStageFlagBits::eComputeShader,
-		vk::PipelineStageFlagBits::eFragmentShader,
+		vk::PipelineStageFlagBits::eVertexShader,
 		vk::DependencyFlags(), 0, nullptr, 0, nullptr, 0, nullptr
 	);
 
@@ -201,10 +224,13 @@ void ComputeExample::RenderFrame(float dt) {
 	);
 	cmdBuffer.endRendering();
 
-	//PrintAverageTimestamps();
+	if (timedMode)
+	{
+		PrintAverageTimestamps();
+	}
 }
 
-void ComputeExample::PrintAverageTimestamps()
+void GasGiantTexGen::PrintAverageTimestamps()
 {
 	
 	frameNum++;
@@ -224,13 +250,13 @@ void ComputeExample::PrintAverageTimestamps()
 	msToEnd += float(timeStamps[2] - timeStamps[1]) * deviceLimits.timestampPeriod / 1000000.0f;
 }
 
-void ComputeExample::InitConstantVectors()
+void GasGiantTexGen::InitConstantVectors()
 {
 	srand(seed++);
 	for (int i = 0; i < NUM_PERMUTATIONS; i++)
 	{
 		perms[i].z = i;
-		HashConstVecs(i);
+		HashConstVecs(i,i);
 	}
 	for (int j = NUM_PERMUTATIONS - 1; j > 0; j--) {
 		int index = std::round(rand() % (j));
@@ -243,35 +269,35 @@ void ComputeExample::InitConstantVectors()
 	}
 }
 
-void ComputeExample::HashConstVecs(int x)
+void GasGiantTexGen::HashConstVecs(int x, int ind)
 {
 	
 	int hash = x % 6;
 	switch (hash)
 	{
 	case 0:
-		perms[x].x = 0.0f;
-		perms[x].y = 1.4142f;
+		perms[ind].x = 0.0f;
+		perms[ind].y = 1.4142f;
 		break;
 	case 1:
-		perms[x].x = 0.0f;
-		perms[x].y = -1.1412f;
+		perms[ind].x = 0.0f;
+		perms[ind].y = -1.1412f;
 		break;
 	case 2:
-		perms[x].x = 0.2455732529f;
-		perms[x].y = 1.392715124f;
+		perms[ind].x = 0.2455732529f;
+		perms[ind].y = 1.392715124f;
 		break;
 	case 3:
-		perms[x].x = -0.2455732529f;
-		perms[x].y = 1.392715124f;
+		perms[ind].x = -0.2455732529f;
+		perms[ind].y = 1.392715124f;
 		break;
 	case 4:
-		perms[x].x = 0.2455732529f;
-		perms[x].y = -1.392715124f;
+		perms[ind].x = 0.2455732529f;
+		perms[ind].y = -1.392715124f;
 		break;
 	case 5:
-		perms[x].x = -0.2455732529f;
-		perms[x].y = -1.392715124f;
+		perms[ind].x = -0.2455732529f;
+		perms[ind].y = -1.392715124f;
 		break;
 	default:
 		break;
@@ -282,42 +308,33 @@ void ComputeExample::HashConstVecs(int x)
 }
 
 //for testing purposes: sends across the same set of numbers to derive the constant vectors every time, so we can see what different effects do
-void ComputeExample::InitTestConstVectors()
+void GasGiantTexGen::InitTestConstVectors()
 {
 	int permCopy[512] =
 	{
-		2,55, 48, 70, 141, 196, 84, 51, 198, 46, 181, 149, 64, 102, 17, 57, 127, 15, 50, 212, 178,
-		197, 138, 42, 244, 215, 236, 233, 225, 85, 26, 158, 71, 174, 228, 134, 235, 205, 21, 111, 67,
-		192, 169, 145, 162, 214, 34, 190, 182, 95, 105, 106, 137, 186, 38, 109, 1, 41, 151, 159, 185,
-		155, 254, 130, 118, 218, 114, 73, 250, 147, 75, 19, 40, 184, 93, 188, 247, 237, 62, 245, 49,
-		76, 116, 104, 249, 119, 142, 171, 16, 144, 164, 10, 100, 202, 161, 187, 157, 32, 44, 253, 167,
-		29, 132, 90, 92, 152, 59, 241, 146, 248, 226, 229, 154, 246, 25, 96, 173, 170, 168, 52, 78,
-		43, 213, 113, 143, 177, 74, 86, 251, 27, 58, 28, 200, 122, 204, 60, 230, 24, 69, 8, 211,
-		179, 129, 220, 193, 11, 125, 153, 133, 61, 108, 209, 91, 117, 79, 150, 45, 163, 176, 6, 242,
-		189, 195, 20, 148, 166, 238, 68, 123, 33, 115, 23, 77, 199, 191, 22, 165, 135, 180, 219, 36,
-		98, 223, 88, 126, 9, 12, 82, 227, 124, 160, 224, 239, 30, 89, 5, 121, 0, 66, 7, 110,
-		107, 103, 210, 54, 65, 81, 194, 240, 203, 80, 37, 94, 87, 128, 99, 252, 112, 243, 172, 201,
-		3, 18, 131, 140, 101, 206, 136, 97, 217, 231, 222, 156, 120, 255, 63, 56, 83, 234, 221, 13,
-		183, 39, 14, 139, 53, 232, 72, 216, 35, 208, 31, 47, 207, 175, 4,
-		2,55, 48, 70, 141, 196, 84, 51, 198, 46, 181, 149, 64, 102, 17, 57, 127, 15, 50, 212, 178,
-		197, 138, 42, 244, 215, 236, 233, 225, 85, 26, 158, 71, 174, 228, 134, 235, 205, 21, 111, 67,
-		192, 169, 145, 162, 214, 34, 190, 182, 95, 105, 106, 137, 186, 38, 109, 1, 41, 151, 159, 185,
-		155, 254, 130, 118, 218, 114, 73, 250, 147, 75, 19, 40, 184, 93, 188, 247, 237, 62, 245, 49,
-		76, 116, 104, 249, 119, 142, 171, 16, 144, 164, 10, 100, 202, 161, 187, 157, 32, 44, 253, 167,
-		29, 132, 90, 92, 152, 59, 241, 146, 248, 226, 229, 154, 246, 25, 96, 173, 170, 168, 52, 78,
-		43, 213, 113, 143, 177, 74, 86, 251, 27, 58, 28, 200, 122, 204, 60, 230, 24, 69, 8, 211,
-		179, 129, 220, 193, 11, 125, 153, 133, 61, 108, 209, 91, 117, 79, 150, 45, 163, 176, 6, 242,
-		189, 195, 20, 148, 166, 238, 68, 123, 33, 115, 23, 77, 199, 191, 22, 165, 135, 180, 219, 36,
-		98, 223, 88, 126, 9, 12, 82, 227, 124, 160, 224, 239, 30, 89, 5, 121, 0, 66, 7, 110,
-		107, 103, 210, 54, 65, 81, 194, 240, 203, 80, 37, 94, 87, 128, 99, 252, 112, 243, 172, 201,
-		3, 18, 131, 140, 101, 206, 136, 97, 217, 231, 222, 156, 120, 255, 63, 56, 83, 234, 221, 13,
-		183, 39, 14, 139, 53, 232, 72, 216, 35, 208, 31, 47, 207, 175, 4
+		21,177,105,37,157,239,156,251,80,48,70,60,127,3,234,96,173,65,122,194,144,115,107,158,167,126,135,44,19,94,24,147,25,
+		118,79,88,187,183,72,30,64,199,145,91,214,216,230,86,205,218,226,246,140,164,143,42,181,76,223,58,104,195,201,162,16,
+		252,49,191,4,12,207,32,209,190,152,34,237,203,179,202,103,244,50,175,198,200,114,82,233,26,186,225,117,102,185,255,248,
+		36,238,35,78,85,165,0,1,38,242,7,108,41,153,163,106,227,228,112,178,100,184,245,116,87,171,224,241,66,138,53,129,13,182,
+		253,148,250,155,55,113,111,52,196,46,51,240,172,217,176,67,101,133,74,68,5,62,210,161,221,90,61,134,28,63,84,154,47,31,9,
+		222,150,170,180,130,6,121,14,146,206,40,128,57,249,10,23,99,236,20,15,189,43,92,215,169,160,125,247,211,192,136,22,2,168,
+		75,11,151,204,33,29,232,123,109,27,17,54,73,56,254,69,213,93,81,97,231,141,120,188,98,71,110,219,235,89,166,208,193,142,
+		45,159,18,243,229,212,197,137,59,139,131,95,39,220,77,119,83,174,8,132,149,124,
+		21,177,105,37,157,239,156,251,80,48,70,60,127,3,234,96,173,65,122,194,144,115,107,158,167,126,135,44,19,94,24,147,25,
+		118,79,88,187,183,72,30,64,199,145,91,214,216,230,86,205,218,226,246,140,164,143,42,181,76,223,58,104,195,201,162,16,
+		252,49,191,4,12,207,32,209,190,152,34,237,203,179,202,103,244,50,175,198,200,114,82,233,26,186,225,117,102,185,255,248,
+		36,238,35,78,85,165,0,1,38,242,7,108,41,153,163,106,227,228,112,178,100,184,245,116,87,171,224,241,66,138,53,129,13,182,
+		253,148,250,155,55,113,111,52,196,46,51,240,172,217,176,67,101,133,74,68,5,62,210,161,221,90,61,134,28,63,84,154,47,31,9,
+		222,150,170,180,130,6,121,14,146,206,40,128,57,249,10,23,99,236,20,15,189,43,92,215,169,160,125,247,211,192,136,22,2,168,
+		75,11,151,204,33,29,232,123,109,27,17,54,73,56,254,69,213,93,81,97,231,141,120,188,98,71,110,219,235,89,166,208,193,142,
+		45,159,18,243,229,212,197,137,59,139,131,95,39,220,77,119,83,174,8,132,149,124
+
 	};
 
-	for (int i = 0; i < NUM_PERMUTATIONS; i++)
+	for (int i = 0; i < NUM_PERMUTATIONS * 2; i++)
 	{
 		perms[i].z = permCopy[i];
-		HashConstVecs(i);
+		HashConstVecs(perms[i].z, i);
 	}
 }
 

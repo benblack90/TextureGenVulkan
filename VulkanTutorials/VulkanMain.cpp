@@ -19,7 +19,7 @@ License: MIT (see LICENSE file at the top of the source tree)
 
 #include "MultiViewportExample.h"
 
-#include "ComputeExample.h"
+#include "GasGiantTexGen.h"
 
 #include "PostProcessingExample.h"
 #include "ShadowMappingExample.h"
@@ -87,7 +87,7 @@ int main() {
 
 	//auto* tutorial = new TessellationExample(*w);
 	//auto* tutorial = new GeometryShaderExample(*w);
-	auto* tutorial = new ComputeExample(*w);
+	auto* tutorial = new GasGiantTexGen(*w);
 	//auto* tutorial = new AsyncComputeExample(*w);
 	//auto* tutorial = new ComputeSkinningExample(*w);
 
