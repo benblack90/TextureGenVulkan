@@ -1,9 +1,6 @@
 /******************************************************************************
-This file is part of the Newcastle Vulkan Tutorial Series
-
-Author:Rich Davison
-Contact:richgdavison@gmail.com
-License: MIT (see LICENSE file at the top of the source tree)
+This file began life as a Vulkan tutorial called BasicCompute.cpp by Rich Davison, but has been entirely rewritten by Ben Schwarz, for the purpose of
+procedurally generating gas giants.
 *//////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "VulkanTutorial.h"
