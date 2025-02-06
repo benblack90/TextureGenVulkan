@@ -12,13 +12,10 @@ mostly written by Rich Davison, but with small additions by me.
 
 ## Building the project
 
-Open CL tool of choice, then
-
-```
-mk dir build
-cd build
-cmake ..
-```
+Open CMake
+Set the root folder as the code location
+Set the folder named build as the build folder
+configure and build
 
 ## Running the project and controls
 
